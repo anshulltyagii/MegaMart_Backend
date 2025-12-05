@@ -2,9 +2,9 @@ package com.ecommerce.controller;
 
 import com.ecommerce.dto.WishlistRequest;
 import com.ecommerce.dto.WishlistResponse;
-import com.ecommerce.model.CartItem;
 import com.ecommerce.service.CartService;
 import com.ecommerce.service.WishlistService;
+import com.ecommerce.util.JwtUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,39 +16,56 @@ import java.util.List;
 @RequestMapping("/api/wishlist")
 public class WishlistController {
 
-    @Autowired
-	private  WishlistService wishlistService;
+	@Autowired
+	private WishlistService wishlistService;
 
-   @Autowired
-   private CartService cartService;
+	@Autowired
+	private JwtUtil jwtUtil;
 
-    @PostMapping("/add")
-    public ResponseEntity<WishlistResponse> add(
-    		@RequestBody WishlistRequest request
-    ) {
-        return ResponseEntity.ok(wishlistService.addToWishlist(request.getUserId(), request.getProductId()));
-    }
+	@Autowired
+	private CartService cartService;
 
-    @PostMapping("/remove")
-    public ResponseEntity<Boolean> remove(
-    		@RequestBody WishlistRequest request
-    ) {
-        return ResponseEntity.ok(wishlistService.removeFromWishlist(request.getUserId(), request.getProductId()));
-    }
+	// ---------------- User Validation Function -----------------
+	private void validateUser(Long userId, String token) {
+		Long loggedId = jwtUtil.getUserId(token);
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<WishlistResponse>> getWishlist(@PathVariable Long userId) {
-        return ResponseEntity.ok(wishlistService.getUserWishlist(userId));
-    }
-    
-    @PostMapping("/{userId}/{productId}/move-to-cart")
-    	public ResponseEntity<?> moveWishlistToCart(@PathVariable Long userId, @PathVariable Long productId, @RequestParam(defaultValue="1") Integer qty){
-    	
-    	CartItem item=cartService.addToCart(userId,productId,qty);
-    	
-    	wishlistService.removeFromWishlist(userId, productId);
-    	
-    	return ResponseEntity.ok(item);
-    	
-    }
-}      
+		if (!loggedId.equals(userId)) {
+			throw new RuntimeException("âŒ Unauthorized! You can access only your wishlist.");
+		}
+	}
+
+	// ---------------- Add Wishlist Item ------------------------
+	@PostMapping("/add")
+	public ResponseEntity<WishlistResponse> add(@RequestHeader("Authorization") String token,
+			@RequestBody WishlistRequest request) {
+		validateUser(request.getUserId(), token.replace("Bearer ", ""));
+		return ResponseEntity.ok(wishlistService.addToWishlist(request.getUserId(), request.getProductId()));
+	}
+
+	// ---------------- Remove Wishlist Item ---------------------
+	@DeleteMapping("/remove")
+	public ResponseEntity<Boolean> remove(@RequestHeader("Authorization") String token,
+			@RequestBody WishlistRequest request) {
+		validateUser(request.getUserId(), token.replace("Bearer ", ""));
+		return ResponseEntity.ok(wishlistService.removeFromWishlist(request.getUserId(), request.getProductId()));
+	}
+
+	// ---------------- Get Wishlist -----------------------------
+	@GetMapping("/{userId}")
+	public ResponseEntity<List<WishlistResponse>> getWishlist(@RequestHeader("Authorization") String token,
+			@PathVariable Long userId) {
+		validateUser(userId, token.replace("Bearer ", ""));
+		return ResponseEntity.ok(wishlistService.getUserWishlist(userId));
+	}
+
+	@PostMapping("/{userId}/{productId}/move-to-cart")
+	public ResponseEntity<?> moveWishlistToCart(@RequestHeader("Authorization") String token, @PathVariable Long userId,
+			@PathVariable Long productId, @RequestParam(defaultValue = "1") Integer qty) {
+		validateUser(userId, token.replace("Bearer ", "")); // ðŸ”· Only user can move wishlist item
+
+		var item = cartService.addToCart(userId, productId, qty);
+		wishlistService.removeFromWishlist(userId, productId);
+
+		return ResponseEntity.ok(item);
+	}
+}

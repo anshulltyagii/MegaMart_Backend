@@ -80,24 +80,33 @@ public class CartRepositoryImpl implements CartRepository {
        ================================================================
        UPDATED METHOD FOR SOFT DELETE COMPLIANCE
        ================================================================
-       We added 'AND p.is_active = TRUE' and 'AND s.is_active = TRUE'
-       to the JOINs. 
-       
-       Effect: If a product or shop is 'Soft Deleted', it will 
-       vanish from the user's cart view automatically.
+       FIX: Changed 'TRUE' to '1' for MySQL compatibility.
     */
-    @Override
-    public List<CartItem> findItemsByCartId(Long cartId) {
-        String sql = """
-            SELECT ci.*, p.name as product_name, p.selling_price as current_price, 
-                   s.id as shop_id, s.name as shop_name
-            FROM cart_items ci
-            JOIN products p ON ci.product_id = p.id AND p.is_active = TRUE
-            JOIN shops s ON p.shop_id = s.id AND s.is_active = TRUE
-            WHERE ci.cart_id = ?
-        """;
-        return jdbc.query(sql, itemMapper, cartId);
-    }
+    /* 
+    ================================================================
+    UPDATED METHOD: Prevents Duplicates using Subquery
+    ================================================================
+ */
+ @Override
+ public List<CartItem> findItemsByCartId(Long cartId) {
+     String sql = """
+         SELECT ci.*, 
+                p.name as product_name, 
+                p.selling_price as current_price, 
+                s.id as shop_id, 
+                s.name as shop_name,
+                (SELECT image_path 
+                 FROM product_images pi 
+                 WHERE pi.product_id = p.id 
+                 AND pi.is_primary = 1 
+                 LIMIT 1) as image_path
+         FROM cart_items ci
+         JOIN products p ON ci.product_id = p.id AND p.is_active = 1
+         JOIN shops s ON p.shop_id = s.id AND s.is_active = 1
+         WHERE ci.cart_id = ?
+     """;
+     return jdbc.query(sql, itemMapper, cartId);
+ }
 
     @Override
     public Optional<CartItem> findCartItem(Long cartId, Long productId) {

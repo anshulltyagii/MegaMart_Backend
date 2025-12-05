@@ -8,16 +8,18 @@ public class OrderItemResponse {
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
+    private String productImage; //  Added this field
 
-    // Constructors
     public OrderItemResponse() {}
     
-    public OrderItemResponse(Long productId, String productName, Integer quantity, BigDecimal unitPrice, BigDecimal totalPrice) {
+    // Updated Constructor
+    public OrderItemResponse(Long productId, String productName, Integer quantity, BigDecimal unitPrice, BigDecimal totalPrice, String productImage) {
         this.productId = productId;
         this.productName = productName;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.totalPrice = totalPrice;
+        this.productImage = productImage;
     }
 
     // Getters & Setters
@@ -35,4 +37,7 @@ public class OrderItemResponse {
     
     public BigDecimal getTotalPrice() { return totalPrice; }
     public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }
+
+    public String getProductImage() { return productImage; }
+    public void setProductImage(String productImage) { this.productImage = productImage; }
 }

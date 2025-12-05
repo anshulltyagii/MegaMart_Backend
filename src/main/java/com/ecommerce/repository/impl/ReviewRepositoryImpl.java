@@ -1,4 +1,4 @@
-package com.ecommerce.repository;
+package com.ecommerce.repository.impl;
 
 import java.util.List;
 import java.util.Optional;
@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.ecommerce.model.Review;
+import com.ecommerce.repository.ReviewRepository;
 import com.ecommerce.repository.rowmapper.ReviewRowMapper;
 
 @Repository

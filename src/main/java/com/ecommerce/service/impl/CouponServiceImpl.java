@@ -22,26 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * COUPON SERVICE IMPLEMENTATION - BULLETPROOF VERSION
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * Handles all edge cases:
- * - Null/empty coupon codes
- * - Invalid discount types
- * - Invalid discount values (negative, zero, >100%)
- * - Invalid date formats
- * - Expired coupons
- * - Not yet active coupons
- * - Inactive coupons
- * - Already used coupons
- * - Minimum order not met
- * - Duplicate coupon codes
- * 
- * @author Samadrita (Validation) + Snigdha (Management)
- * @version 2.0 - Production Ready
- */
 @Service
 public class CouponServiceImpl implements CouponService {
 
@@ -57,9 +37,7 @@ public class CouponServiceImpl implements CouponService {
         log.info("CouponService initialized");
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // PART 1: SNIGDHA'S LOGIC (Creation & Management)
-    // ════════════════════════════════════════════════════════════════════════
+   
 
     @Override
     @Transactional
@@ -222,9 +200,6 @@ public class CouponServiceImpl implements CouponService {
                 .collect(Collectors.toList());
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // PART 2: SAMADRITA'S LOGIC (Validation for Checkout)
-    // ════════════════════════════════════════════════════════════════════════
 
     @Override
     public ApiResponse<Coupon> validateCoupon(String code, Long userId, Double cartTotal) {

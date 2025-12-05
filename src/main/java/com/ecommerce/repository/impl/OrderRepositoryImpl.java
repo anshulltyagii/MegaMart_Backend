@@ -111,6 +111,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     // ========================================================================
     @Override
     public void updatePaymentStatus(Long orderId, String paymentStatus, String orderStatus) {
+        // MySQL will automatically update 'updated_at' column due to schema definition
         String sql = "UPDATE orders SET payment_status = ?, status = ? WHERE id = ?";
         jdbc.update(sql, paymentStatus, orderStatus, orderId);
     }
@@ -122,8 +123,13 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public List<OrderItemResponse> findItemsByOrderId(Long orderId) {
         String sql = """
-            SELECT oi.product_id, p.name as product_name, 
-                   oi.quantity, oi.unit_price, oi.total_price
+            SELECT oi.product_id, 
+                   p.name as product_name, 
+                   oi.quantity, 
+                   oi.unit_price, 
+                   oi.total_price,
+                   (SELECT image_path FROM product_images pi 
+                    WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as product_image
             FROM order_items oi
             JOIN products p ON oi.product_id = p.id
             WHERE oi.order_id = ?
@@ -135,7 +141,8 @@ public class OrderRepositoryImpl implements OrderRepository {
                 rs.getString("product_name"),
                 rs.getInt("quantity"),
                 rs.getBigDecimal("unit_price"),
-                rs.getBigDecimal("total_price")
+                rs.getBigDecimal("total_price"),
+                rs.getString("product_image") // ✅ Map the new image column
             );
         }, orderId);
     }
@@ -145,6 +152,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     // ========================================================================
     @Override
     public void updateOrderStatus(Long orderId, String status) {
+        // MySQL will automatically update 'updated_at' column due to schema definition
         String sql = "UPDATE orders SET status = ? WHERE id = ?";
         jdbc.update(sql, status, orderId);
     }
@@ -157,9 +165,6 @@ public class OrderRepositoryImpl implements OrderRepository {
         return jdbc.query(sql, orderRowMapper);
     }
     
-    
-    
-
     // ========================================================================
     // ROW MAPPER (Helper)
     // ========================================================================
@@ -171,7 +176,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         order.setOrderNumber(rs.getString("order_number"));
         order.setTotalAmount(rs.getBigDecimal("total_amount"));
         order.setStatus(rs.getString("status"));
-        order.setPaymentStatus(rs.getString("payment_status")); // Added this
+        order.setPaymentStatus(rs.getString("payment_status"));
         order.setShippingAddress(rs.getString("shipping_address"));
         
         long parentId = rs.getLong("order_parent_id");
@@ -182,6 +187,12 @@ public class OrderRepositoryImpl implements OrderRepository {
         if (rs.getTimestamp("created_at") != null) {
             order.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         }
+
+        // ✅ ADDED THIS BLOCK to map 'updated_at' column
+        if (rs.getTimestamp("updated_at") != null) {
+            order.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        }
+
         return order;
     };
 }

@@ -15,6 +15,9 @@ public class CartItem {
     private BigDecimal currentPrice; // Real-time price from products table
     private Long shopId;
     private String shopName;
+    
+    //NEWLY ADDED FOR FRONTEND RENDERING
+    private String imagePath; 
 
     public CartItem() {}
 
@@ -29,6 +32,10 @@ public class CartItem {
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public BigDecimal getPriceAtAdd() { return priceAtAdd; }
     public void setPriceAtAdd(BigDecimal priceAtAdd) { this.priceAtAdd = priceAtAdd; }
+    
+    //  ADD GETTER & SETTER FOR IMAGE PATH
+    public String getImagePath() { return imagePath; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
     
     // Extra Details
     public String getProductName() { return productName; }

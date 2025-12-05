@@ -14,4 +14,6 @@ public interface ShopService {
     boolean approveShop(Long shopId);
     boolean rejectShop(Long shopId);
     boolean softDeleteShop(Long shopId);
+    List<ShopResponse> getShopsByOwnerId(Long ownerUserId);
+
 }

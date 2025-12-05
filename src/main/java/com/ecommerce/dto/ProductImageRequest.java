@@ -1,15 +1,10 @@
 package com.ecommerce.dto;
 
-/**
- * Request DTO for adding/updating a product image.
- */
 public class ProductImageRequest {
 
-	private String imagePath; // e.g. "/product-images/tshirtyellow.png"
-	private Boolean primary; // true / false
-	private Integer sortImageOrder; // 0,1,2...
-
-// -------- Getters & Setters --------
+	private String imagePath;
+	private Boolean primary;
+	private Integer sortImageOrder;
 
 	public String getImagePath() {
 		return imagePath;

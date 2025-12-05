@@ -5,6 +5,7 @@ import com.ecommerce.dto.CouponRequest;
 import com.ecommerce.dto.CouponResponse;
 import com.ecommerce.model.Coupon;
 import com.ecommerce.service.CouponService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -13,20 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * COUPON CONTROLLER - BULLETPROOF VERSION
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * Features:
- * - Constructor injection
- * - Consistent ApiResponse wrapper
- * - Comprehensive logging
- * - Proper HTTP status codes
- * 
- * @author Samadrita (Validation) + Snigdha (Management)
- * @version 2.0 - Production Ready
- */
+
 @RestController
 @RequestMapping("/api/coupons")
 public class CouponController {
@@ -44,8 +32,17 @@ public class CouponController {
     // ADMIN/SHOPKEEPER ENDPOINTS (Snigdha's)
     // ════════════════════════════════════════════════════════════════════════
 
+    /**
+     * CREATE COUPON
+     * TODO: Add role check to ensure only ADMIN or SHOPKEEPER can create
+     */
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<CouponResponse>> createCoupon(@RequestBody CouponRequest request) {
+    public ResponseEntity<ApiResponse<CouponResponse>> createCoupon(
+            @RequestBody CouponRequest request,
+            HttpServletRequest httpRequest) {
+        
+        
+        
         log.info("POST /api/coupons/create - Creating coupon: {}", 
                 request != null ? request.getCode() : "NULL");
         
@@ -56,10 +53,14 @@ public class CouponController {
                 .body(new ApiResponse<>(true, "Coupon created successfully", coupon));
     }
 
+   
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CouponResponse>> updateCoupon(
             @PathVariable Long id, 
-            @RequestBody CouponRequest request) {
+            @RequestBody CouponRequest request,
+            HttpServletRequest httpRequest) {
+        
+        // TODO: Add role check if needed
         
         log.info("PUT /api/coupons/{} - Updating coupon", id);
         
@@ -68,8 +69,16 @@ public class CouponController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Coupon updated successfully", coupon));
     }
 
+    /**
+     * DELETE COUPON
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteCoupon(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCoupon(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        
+        // TODO: Add role check if needed
+        
         log.info("DELETE /api/coupons/{} - Deleting coupon", id);
         
         couponService.deleteCoupon(id);
@@ -77,6 +86,9 @@ public class CouponController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Coupon deactivated successfully"));
     }
 
+    /**
+     * GET COUPON BY ID
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<CouponResponse>> getCouponById(@PathVariable Long id) {
         log.info("GET /api/coupons/{} - Fetching coupon", id);
@@ -86,6 +98,9 @@ public class CouponController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Coupon retrieved successfully", coupon));
     }
 
+    /**
+     * GET COUPONS BY SHOP
+     */
     @GetMapping("/shop/{shopId}")
     public ResponseEntity<ApiResponse<List<CouponResponse>>> getCouponsByShop(@PathVariable Long shopId) {
         log.info("GET /api/coupons/shop/{} - Fetching shop coupons", shopId);
@@ -99,6 +114,9 @@ public class CouponController {
         return ResponseEntity.ok(new ApiResponse<>(true, message, coupons));
     }
 
+    /**
+     * LIST ALL COUPONS
+     */
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<CouponResponse>>> listAllCoupons() {
         log.info("GET /api/coupons/all - Fetching all coupons");
@@ -112,28 +130,25 @@ public class CouponController {
         return ResponseEntity.ok(new ApiResponse<>(true, message, coupons));
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // USER ENDPOINTS (Samadrita's)
-    // ════════════════════════════════════════════════════════════════════════
-
+    
     @GetMapping("/validate")
     public ResponseEntity<ApiResponse<Coupon>> validateCoupon(
             @RequestParam String code, 
-            @RequestParam Long userId,
-            @RequestParam Double cartTotal) {
+            @RequestParam Double cartTotal,
+            HttpServletRequest request) {
         
-        log.info("GET /api/coupons/validate - Validating coupon: {} for user: {} with cart: {}", 
-                code, userId, cartTotal);
+        // Extract userId from JWT token
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("GET /api/coupons/validate - User: {} validating coupon: {} with cart: ₹{}", 
+                userId, code, cartTotal);
         
         ApiResponse<Coupon> response = couponService.validateCoupon(code, userId, cartTotal);
         
         return ResponseEntity.ok(response);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // ADDITIONAL HELPFUL ENDPOINTS
-    // ════════════════════════════════════════════════════════════════════════
-
+   
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<List<CouponResponse>>> getActiveCoupons() {
         log.info("GET /api/coupons/active - Fetching active coupons");

@@ -5,26 +5,14 @@ import com.ecommerce.dto.CartRequest;
 import com.ecommerce.dto.CartResponse;
 import com.ecommerce.model.CartItem;
 import com.ecommerce.service.CartService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * CART CONTROLLER - BULLETPROOF VERSION
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * Features:
- * - Constructor injection
- * - Consistent ApiResponse wrapper
- * - Comprehensive logging
- * - Proper HTTP status codes
- * 
- * @author Samadrita
- * @version 2.0 - Production Ready
- */
+
 @RestController
 @RequestMapping("/api/cart")
 public class CartController {
@@ -33,34 +21,35 @@ public class CartController {
 
     private final CartService cartService;
 
-    // Constructor Injection
+
     public CartController(CartService cartService) {
         this.cartService = cartService;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // GET USER'S CART
-    // ════════════════════════════════════════════════════════════════════════
-    
-    @GetMapping("/{userId}")
-    public ResponseEntity<ApiResponse<CartResponse>> getCartByUserId(@PathVariable Long userId) {
-        log.info("GET /api/cart/{} - Fetching cart", userId);
+ 
+    @GetMapping
+    public ResponseEntity<ApiResponse<CartResponse>> getUserCart(HttpServletRequest request) {
+        
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("GET /api/cart - Fetching cart for user: {}", userId);
         
         CartResponse cartResponse = cartService.getUserCart(userId);
         
         return ResponseEntity.ok(new ApiResponse<>(true, "Cart retrieved successfully", cartResponse));
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // ADD ITEM TO CART
-    // ════════════════════════════════════════════════════════════════════════
+   
     
-    @PostMapping("/{userId}/items")
+    @PostMapping("/items")
     public ResponseEntity<ApiResponse<CartItem>> addItemToCart(
-            @PathVariable Long userId, 
-            @RequestBody CartRequest cartRequest) {
+            @RequestBody CartRequest cartRequest,
+            HttpServletRequest request) {
         
-        log.info("POST /api/cart/{}/items - Adding item: productId={}, quantity={}", 
+       
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("POST /api/cart/items - User: {} adding item: productId={}, quantity={}", 
                 userId, cartRequest.getProductId(), cartRequest.getQuantity());
         
         CartItem cartItem = cartService.addToCart(
@@ -74,18 +63,19 @@ public class CartController {
                 .body(new ApiResponse<>(true, "Item added to cart successfully", cartItem));
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // UPDATE ITEM QUANTITY
-    // ════════════════════════════════════════════════════════════════════════
+   
     
-    @PutMapping("/{userId}/items/{itemId}")
+    @PutMapping("/items/{itemId}")
     public ResponseEntity<ApiResponse<CartItem>> updateCartItemQuantity(
-            @PathVariable Long userId, 
             @PathVariable Long itemId, 
-            @RequestBody CartRequest cartRequest) {
+            @RequestBody CartRequest cartRequest,
+            HttpServletRequest request) {
         
-        log.info("PUT /api/cart/{}/items/{} - Updating quantity to {}", 
-                userId, itemId, cartRequest.getQuantity());
+        // Extract userId from JWT token
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("PUT /api/cart/items/{} - User: {} updating quantity to {}", 
+                itemId, userId, cartRequest.getQuantity());
         
         CartItem updatedItem = cartService.updateCartItemQuantity(
                 userId, 
@@ -96,42 +86,44 @@ public class CartController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Cart item updated successfully", updatedItem));
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // REMOVE ITEM FROM CART
-    // ════════════════════════════════════════════════════════════════════════
     
-    @DeleteMapping("/{userId}/items/{itemId}")
+    
+    @DeleteMapping("/items/{itemId}")
     public ResponseEntity<ApiResponse<Void>> removeItemFromCart(
-            @PathVariable Long userId, 
-            @PathVariable Long itemId) {
+            @PathVariable Long itemId,
+            HttpServletRequest request) {
         
-        log.info("DELETE /api/cart/{}/items/{} - Removing item", userId, itemId);
+        // Extract userId from JWT token
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("DELETE /api/cart/items/{} - User: {} removing item", itemId, userId);
         
         cartService.removeFromCart(userId, itemId);
         
         return ResponseEntity.ok(new ApiResponse<>(true, "Item removed from cart successfully"));
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // CLEAR ENTIRE CART
-    // ════════════════════════════════════════════════════════════════════════
-    
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<ApiResponse<Void>> clearCart(@PathVariable Long userId) {
-        log.info("DELETE /api/cart/{} - Clearing cart", userId);
+   
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> clearCart(HttpServletRequest request) {
+       
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("DELETE /api/cart - User: {} clearing cart", userId);
         
         cartService.clearCart(userId);
         
         return ResponseEntity.ok(new ApiResponse<>(true, "Cart cleared successfully"));
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // VALIDATE CART (Before Checkout)
-    // ════════════════════════════════════════════════════════════════════════
     
-    @GetMapping("/{userId}/validate")
-    public ResponseEntity<ApiResponse<CartResponse>> validateCart(@PathVariable Long userId) {
-        log.info("GET /api/cart/{}/validate - Validating cart", userId);
+    
+    @GetMapping("/validate")
+    public ResponseEntity<ApiResponse<CartResponse>> validateCart(HttpServletRequest request) {
+        
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("GET /api/cart/validate - User: {} validating cart", userId);
         
         CartResponse cartResponse = cartService.validateCart(userId);
         

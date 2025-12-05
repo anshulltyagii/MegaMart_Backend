@@ -5,4 +5,5 @@ import com.ecommerce.model.Payment;
 
 public interface PaymentService {
     Payment processPayment(PaymentRequest request);
+    Payment getPaymentByOrderId(Long orderId);
 }

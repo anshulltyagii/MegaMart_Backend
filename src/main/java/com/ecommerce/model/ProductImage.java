@@ -1,23 +1,14 @@
 package com.ecommerce.model;
 
-/**
- * Represents a single image for a product.
- *
- * Features: - Multiple images per product (same productId) - Primary image
- * support (isPrimary) - Display order support (sortImageOrder) - Soft delete
- * via isDeleted flag
- */
 public class ProductImage {
 
-	private Long id; // PK
-	private Long productId; // FK -> products.id
+	private Long id;
+	private Long productId;
 
-	private String imagePath; // URL/path to image file
-	private boolean isPrimary; // true => main thumbnail
-	private int sortImageOrder; // for gallery ordering, 0 = first
-	private boolean isDeleted; // soft delete flag
-
-// --------- Getters & Setters ---------
+	private String imagePath;
+	private boolean isPrimary;
+	private int sortImageOrder;
+	private boolean isDeleted;
 
 	public Long getId() {
 		return id;

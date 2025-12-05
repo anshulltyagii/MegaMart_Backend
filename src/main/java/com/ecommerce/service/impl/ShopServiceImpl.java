@@ -2,8 +2,13 @@ package com.ecommerce.service.impl;
 
 import com.ecommerce.dto.ShopRequest;
 import com.ecommerce.dto.ShopResponse;
+import com.ecommerce.enums.UserRole;
+import com.ecommerce.exception.BadRequestException;
+import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.model.Shop;
+import com.ecommerce.model.User;
 import com.ecommerce.repository.ShopRepository;
+import com.ecommerce.repository.UserRepository;
 import com.ecommerce.service.ShopService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,62 +20,85 @@ import java.util.stream.Collectors;
 @Service
 public class ShopServiceImpl implements ShopService {
 
-    @Autowired
+	@Autowired
 	private ShopRepository shopRepository;
 
-    @Override
-    public ShopResponse createShop(ShopRequest req) {
-        Shop s = new Shop();
-        s.setOwnerUserId(req.getOwnerUserId());
-        s.setName(req.getName());
-        s.setDescription(req.getDescription());
-        s.setAddress(req.getAddress());
-        s.setIsApproved(false);
-        s.setIsActive(true);
+	@Autowired
+	private UserRepository userRepository;
 
-        Long id = shopRepository.save(s);
-        s.setId(id);
-        return DtoMapper.shopToResponse(s);
-    }
+	@Override
+	public ShopResponse createShop(ShopRequest req) {
 
-    @Override
-    public ShopResponse updateShop(Long id, ShopRequest req) {
-        Shop s = shopRepository.getShopById(id).orElseThrow(() -> new RuntimeException("Shop not found"));
-        s.setName(req.getName());
-        s.setDescription(req.getDescription());
-        s.setAddress(req.getAddress());
-        Shop out = shopRepository.update(s);
-        return DtoMapper.shopToResponse(out);
-    }
+		User owner = userRepository.findById(req.getOwnerUserId())
+				.orElseThrow(() -> new ResourceNotFoundException("User not found with ID" + req.getOwnerUserId()));
 
-    @Override
-    public ShopResponse getShopById(Long id) {
-        return shopRepository.getShopById(id).map(DtoMapper::shopToResponse)
-                .orElseThrow(() -> new RuntimeException("Shop not found"));
-    }
+		if (owner.getRole() != UserRole.SHOPKEEPER) {
+			throw new BadRequestException("Only SHOPKEEPERS can create a shop");
+		}
 
-    @Override
-    public List<ShopResponse> getAllShops() {
-        return shopRepository.getAllShops().stream().map(DtoMapper::shopToResponse).collect(Collectors.toList());
-    }
+		if (req.getName() == null || req.getName().trim().isEmpty())
+			throw new BadRequestException("Shop name cannot be empty");
 
-    @Override
-    public List<ShopResponse> getPendingApprovalShops() {
-        return shopRepository.getPendingApprovalShops().stream().map(DtoMapper::shopToResponse).collect(Collectors.toList());
-    }
+		Shop s = new Shop();
+		s.setOwnerUserId(req.getOwnerUserId());
+		s.setName(req.getName());
+		s.setDescription(req.getDescription());
+		s.setAddress(req.getAddress());
+		s.setIsApproved(false);
+		s.setIsActive(true);
 
-    @Override
-    public boolean approveShop(Long shopId) {
-        return shopRepository.approveShop(shopId);
-    }
+		Long id = shopRepository.save(s);
+		s.setId(id);
+		return DtoMapper.shopToResponse(s);
+	}
 
-    @Override
-    public boolean rejectShop(Long shopId) {
-        return shopRepository.rejectShop(shopId);
-    }
+	@Override
+	public ShopResponse updateShop(Long id, ShopRequest req) {
+		Shop s = shopRepository.getShopById(id).orElseThrow(() -> new RuntimeException("Shop not found"));
+		s.setName(req.getName());
+		s.setDescription(req.getDescription());
+		s.setAddress(req.getAddress());
+		Shop out = shopRepository.update(s);
+		return DtoMapper.shopToResponse(out);
+	}
 
-    @Override
-    public boolean softDeleteShop(Long shopId) {
-        return shopRepository.softDeleteShop(shopId);
-    }
+	@Override
+	public ShopResponse getShopById(Long id) {
+		return shopRepository.getShopById(id).map(DtoMapper::shopToResponse)
+				.orElseThrow(() -> new RuntimeException("Shop not found"));
+	}
+
+	@Override
+	public List<ShopResponse> getAllShops() {
+		return shopRepository.getAllShops().stream().map(DtoMapper::shopToResponse).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<ShopResponse> getPendingApprovalShops() {
+		return shopRepository.getPendingApprovalShops().stream().map(DtoMapper::shopToResponse)
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public boolean approveShop(Long shopId) {
+		return shopRepository.approveShop(shopId);
+	}
+
+	@Override
+	public boolean rejectShop(Long shopId) {
+		return shopRepository.rejectShop(shopId);
+	}
+
+	@Override
+	public boolean softDeleteShop(Long shopId) {
+		return shopRepository.softDeleteShop(shopId);
+	}
+
+	@Override
+	public List<ShopResponse> getShopsByOwnerId(Long ownerUserId) {
+		List<Shop> shops = shopRepository.findByOwner(ownerUserId);
+
+		return shops.stream().map(DtoMapper::shopToResponse).collect(Collectors.toList());
+	}
+
 }

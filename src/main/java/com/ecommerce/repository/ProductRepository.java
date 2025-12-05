@@ -28,4 +28,10 @@ public interface ProductRepository {
 
 // search with simple filters (category optional)
 	List<Product> search(String q, Long categoryId, int limit, int offset);
+	
+	Long findShopOwnerId(Long shopId);
+	
+	List<String> searchSuggestions(String query);
+
+
 }

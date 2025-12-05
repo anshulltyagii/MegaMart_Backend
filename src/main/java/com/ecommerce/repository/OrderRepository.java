@@ -1,6 +1,6 @@
 package com.ecommerce.repository;
 
-import com.ecommerce.dto.OrderItemResponse; // Make sure this import is here
+import com.ecommerce.dto.OrderItemResponse;
 import com.ecommerce.model.Order;
 import com.ecommerce.model.OrderItem;
 import java.util.List;
@@ -17,6 +17,5 @@ public interface OrderRepository {
     List<OrderItemResponse> findItemsByOrderId(Long orderId);
     void updateOrderStatus(Long orderId, String status);
     
-    // FOR ADMIN: Get all orders (Newest first)
     List<Order> findAll();
 }

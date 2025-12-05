@@ -4,67 +4,129 @@ import com.ecommerce.dto.OrderRequest;
 import com.ecommerce.dto.OrderResponse;
 import com.ecommerce.model.Order;
 import com.ecommerce.service.OrderService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    @Autowired
-    private OrderService orderService;
+    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
 
-    // 1. Place Order
-    @PostMapping("/checkout/{userId}")
-    public ResponseEntity<List<Order>> checkout(@PathVariable Long userId, @RequestBody OrderRequest request) {
+    private final OrderService orderService;
+
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // PLACE ORDER (CHECKOUT)
+    // ════════════════════════════════════════════════════════════════════════
+    
+    @PostMapping("/checkout")
+    public ResponseEntity<List<Order>> checkout(
+            @RequestBody OrderRequest request,
+            HttpServletRequest httpRequest) {
+        
+        // Extract userId from JWT token
+        Long userId = (Long) httpRequest.getAttribute("currentUserId");
+        
+        log.info("POST /api/orders/checkout - User: {} placing order", userId);
+        
         List<Order> orders = orderService.placeOrder(userId, request);
+        
+        log.info("User: {} - Created {} order(s)", userId, orders.size());
+        
         return ResponseEntity.ok(orders);
     }
 
-    // 2. Get Order History for User (NEW)
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<OrderResponse>> getUserOrders(@PathVariable Long userId) {
+    // ════════════════════════════════════════════════════════════════════════
+    // GET USER ORDER HISTORY
+    // ════════════════════════════════════════════════════════════════════════
+    
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> getUserOrders(HttpServletRequest request) {
+        // Extract userId from JWT token
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("GET /api/orders - Fetching orders for user: {}", userId);
+        
         List<OrderResponse> orders = orderService.getUserOrders(userId);
+        
         return ResponseEntity.ok(orders);
     }
 
-    // 3. Get Specific Order Details (NEW)
+    // ════════════════════════════════════════════════════════════════════════
+    // GET SPECIFIC ORDER DETAILS
+    // ════════════════════════════════════════════════════════════════════════
+    
     @GetMapping("/{orderId}")
-    public ResponseEntity<OrderResponse> getOrderDetails(@PathVariable Long orderId) {
+    public ResponseEntity<OrderResponse> getOrderDetails(
+            @PathVariable Long orderId,
+            HttpServletRequest request) {
+        
+        // Extract userId from JWT token
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("GET /api/orders/{} - User: {} fetching order details", orderId, userId);
+        
+        // Service layer will verify order belongs to user
         OrderResponse order = orderService.getOrderDetails(orderId);
+        
         return ResponseEntity.ok(order);
     }
 
-    // 4. Cancel Order (NEW)
-    @PutMapping("/{orderId}/cancel")
-    public ResponseEntity<String> cancelOrder(@PathVariable Long orderId) {
-        orderService.cancelOrder(orderId);
-        return ResponseEntity.ok("Order cancelled successfully");
-    }
+    // ════════════════════════════════════════════════════════════════════════
+    // CANCEL ORDER
+    // ════════════════════════════════════════════════════════════════════════
     
- // ... existing code ...
+    @PutMapping("/{orderId}/cancel")
+    public ResponseEntity<String> cancelOrder(
+            @PathVariable Long orderId,
+            HttpServletRequest request) {
+        
+        
+        Long userId = (Long) request.getAttribute("currentUserId");
+        
+        log.info("PUT /api/orders/{}/cancel - User: {} cancelling order", orderId, userId);
+        
+       
+        orderService.cancelOrder(orderId);
+        
+        return ResponseEntity.ok("Order cancelled successfully. Inventory has been released.");
+    }
 
- // --------------------------------------------------------
- // ADMIN ENDPOINTS
- // --------------------------------------------------------
+   
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<OrderResponse>> getAllOrders(HttpServletRequest request) {
 
- // 5. ADMIN: View All Orders
- @GetMapping("/admin/all")
- public ResponseEntity<List<OrderResponse>> getAllOrders() {
-     List<OrderResponse> orders = orderService.getAllOrders();
-     return ResponseEntity.ok(orders);
- }
+        
+        log.info("GET /api/orders/admin/all - Fetching all orders");
+        
+        List<OrderResponse> orders = orderService.getAllOrders();
+        
+        return ResponseEntity.ok(orders);
+    }
 
- // 6. ADMIN: Update Order Status (e.g., /api/orders/admin/101/status?status=SHIPPED)
- @PatchMapping("/admin/{orderId}/status")
- public ResponseEntity<OrderResponse> updateOrderStatus(
-         @PathVariable Long orderId, 
-         @RequestParam String status) {
-     
-     OrderResponse updatedOrder = orderService.updateOrderStatus(orderId, status);
-     return ResponseEntity.ok(updatedOrder);
- }
+   
+    @PatchMapping("/admin/{orderId}/status")
+    public ResponseEntity<OrderResponse> updateOrderStatus(
+            @PathVariable Long orderId, 
+            @RequestParam String status,
+            HttpServletRequest request) {
+        
+       
+        
+        log.info("PATCH /api/orders/admin/{}/status - Updating to: {}", orderId, status);
+        
+        OrderResponse updatedOrder = orderService.updateOrderStatus(orderId, status);
+        
+        return ResponseEntity.ok(updatedOrder);
+    }
 }

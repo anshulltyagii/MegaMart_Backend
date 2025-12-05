@@ -80,7 +80,7 @@ public class ShopRepositoryImpl implements ShopRepository {
 
     @Override
     public boolean rejectShop(Long shopId) {
-        String sql = "UPDATE shops SET is_approved=0, is_active=0, WHERE id=? AND is_active=1";
+        String sql = "UPDATE shops SET is_approved=0, is_active=0 WHERE id=? AND is_active=1";
         return jdbcTemplate.update(sql, shopId) > 0;
     }
 

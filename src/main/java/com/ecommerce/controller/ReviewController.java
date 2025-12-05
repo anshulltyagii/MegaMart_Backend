@@ -13,7 +13,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ecommerce.dto.ReviewRequest;
 import com.ecommerce.dto.ReviewResponse;
+import com.ecommerce.enums.UserRole;
+import com.ecommerce.exception.BadRequestException;
+import com.ecommerce.model.User;
 import com.ecommerce.service.ReviewService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -22,10 +27,32 @@ public class ReviewController {
     @Autowired
 	private ReviewService reviewService;
     
+    private void checkUserRole(Long targetUserId, HttpServletRequest req){
+    	
+    	User currentUser=(User) req.getAttribute("currentUser");
+    	if(currentUser==null) {
+    		throw new BadRequestException("Unauthorized request");
+    	}
+    	
+    	Long currentUserId=currentUser.getId();
+    	boolean isOwner=currentUserId.equals(targetUserId);
+    	boolean isAdmin=currentUser.getRole()==UserRole.ADMIN;
+    	
+    	if(!isOwner && !isAdmin) {
+    		throw new BadRequestException("Access denied: omly user and admin can perform this action!");
+    		
+    	}   			
+    	
+    }
+      
+    
     @PostMapping("/{userId}")
     public ReviewResponse addReview(@PathVariable Long userId,
-                                    @RequestBody ReviewRequest req) {
-        return reviewService.addReview(userId, req);
+                                    @RequestBody ReviewRequest req,
+                                    HttpServletRequest request) {
+       
+    	checkUserRole(userId,request); 	
+    	return reviewService.addReview(userId, req);
     }
     
     @GetMapping("/{reviewId}")
@@ -54,7 +81,9 @@ public class ReviewController {
     }
     
     @DeleteMapping("/{reviewId}/user/{userId}")
-    public String deleteReview(@PathVariable Long reviewId,@PathVariable Long userId) {
+    public String deleteReview(@PathVariable Long reviewId,@PathVariable Long userId, HttpServletRequest request) {
+    	
+    	checkUserRole(userId,request); 	
     	reviewService.deleteReview(reviewId,userId);
     	return "Review soft deleted";
     	

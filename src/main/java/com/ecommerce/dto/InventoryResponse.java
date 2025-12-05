@@ -1,46 +1,50 @@
 package com.ecommerce.dto;
 
-/**
-* DTO representing inventory status for a product.
-*/
 public class InventoryResponse {
+	private Long productId;
+	private int quantity;
+	private int reserved;
+	private int available;
+	private String stockStatus; 
 
-private Long productId;
-private Integer quantity;
-private Integer reserved;
-private Integer available; // quantity - reserved
+	// ---------------- Getters & Setters ----------------
+	public Long getProductId() {
+		return productId;
+	}
 
-// -------- Getters & Setters --------
+	public void setProductId(Long productId) {
+		this.productId = productId;
+	}
 
-public Long getProductId() {
-return productId;
-}
+	public int getQuantity() {
+		return quantity;
+	}
 
-public void setProductId(Long productId) {
-this.productId = productId;
-}
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
 
-public Integer getQuantity() {
-return quantity;
-}
+	public int getReserved() {
+		return reserved;
+	}
 
-public void setQuantity(Integer quantity) {
-this.quantity = quantity;
-}
+	public void setReserved(int reserved) {
+		this.reserved = reserved;
+	}
 
-public Integer getReserved() {
-return reserved;
-}
+	public int getAvailable() {
+		return available;
+	}
 
-public void setReserved(Integer reserved) {
-this.reserved = reserved;
-}
+	public void setAvailable(int available) {
+		this.available = available;
+	}
 
-public Integer getAvailable() {
-return available;
-}
+	public String getStockStatus() {
+		return stockStatus;
+	}
 
-public void setAvailable(Integer available) {
-this.available = available;
-}
+	public void setStockStatus(String stockStatus) {
+		this.stockStatus = stockStatus;
+	}
 }

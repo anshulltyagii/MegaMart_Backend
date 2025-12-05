@@ -7,116 +7,140 @@ import com.ecommerce.model.ProductImage;
 import com.ecommerce.repository.ProductImageRepository;
 import com.ecommerce.service.ProductImageService;
 
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Service
 public class ProductImageServiceImpl implements ProductImageService {
 
-	private final ProductImageRepository productImageRepository;
+	private final ProductImageRepository repo;
 
-	public ProductImageServiceImpl(ProductImageRepository productImageRepository) {
-		this.productImageRepository = productImageRepository;
+	public ProductImageServiceImpl(ProductImageRepository repo) {
+		this.repo = repo;
 	}
 
-// ------------------------------------------------------------
-// ADD IMAGE TO PRODUCT
-// ------------------------------------------------------------
 	@Override
-	public ProductImage addImageToProduct(Long productId, ProductImageRequest request) {
-		
-		//till the time image is stored in static folder, this checks whether image exists or not
-		String imagePath = request.getImagePath();
-		if(imagePath == null || imagePath.isBlank()) {
-			throw new BadRequestException("Image path is required.");
-		}
-		
-		String classpathLocation="static" + (imagePath.startsWith("/") ? imagePath: "/" + imagePath);
-		
-		ClassPathResource resource = new ClassPathResource(classpathLocation);
-		if(!resource.exists()) {
-			throw new BadRequestException("Image file not found in static folder: " + imagePath);
-		}
+	public ProductImage addImageToProduct(Long productId, ProductImageRequest req) {
 
-		//now sure that image exists
-		ProductImage image = new ProductImage();
-		image.setProductId(productId);
-		image.setImagePath(request.getImagePath());
+		if (req.getImagePath() == null || req.getImagePath().isBlank())
+			throw new BadRequestException("Image path required.");
 
-// default false if null
-		boolean primary = request.getPrimary() != null && request.getPrimary();
-		image.setPrimary(primary);
+		Integer max = repo.findMaxSortOrder(productId);
+		int nextOrder = max + 1;
 
-// default 0 if null
-		int sortOrder = request.getSortImageOrder() != null ? request.getSortImageOrder() : 0;
-		image.setSortImageOrder(sortOrder);
+		ProductImage img = new ProductImage();
+		img.setProductId(productId);
+		img.setImagePath(req.getImagePath());
+		img.setPrimary(req.getPrimary() != null && req.getPrimary());
+		img.setSortImageOrder(nextOrder);
+		img.setDeleted(false);
 
-		image.setDeleted(false);
+		Long id = repo.save(img);
+		img.setId(id);
 
-		Long id = productImageRepository.save(image);
-		image.setId(id);
-
-		return image;
+		return img;
 	}
 
-// ------------------------------------------------------------
-// GET IMAGES FOR PRODUCT (NON-DELETED)
-// ------------------------------------------------------------
+	@Override
+	public ProductImage uploadAndSave(Long productId, MultipartFile file) {
+
+		if (file.isEmpty()) {
+			throw new BadRequestException("File is empty");
+		}
+
+		try {
+			String root = System.getProperty("user.dir");
+			String folderPath = root + "/product-images/" + productId;
+
+			File folder = new File(folderPath);
+			if (!folder.exists())
+				folder.mkdirs();
+
+			String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+			Path path = Paths.get(folderPath + "/" + fileName);
+			Files.copy(file.getInputStream(), path);
+
+			String dbPath = "/product-images/" + productId + "/" + fileName;
+
+			// AUTO PRIMARY FOR FIRST IMAGE
+			List<ProductImage> existingImages = repo.findByProductId(productId);
+			boolean firstImage = existingImages.isEmpty();
+			boolean isPrimary = firstImage; // set true only for first image
+
+			// auto increment sort order
+			Integer max = repo.findMaxSortOrder(productId);
+			int nextOrder = max + 1;
+
+			ProductImage img = new ProductImage();
+			img.setProductId(productId);
+			img.setImagePath(dbPath);
+			img.setPrimary(isPrimary);
+			img.setSortImageOrder(nextOrder);
+			img.setDeleted(false);
+
+			Long id = repo.save(img);
+			img.setId(id);
+
+			return img;
+
+		} catch (Exception e) {
+			throw new BadRequestException("Image upload failed: " + e.getMessage());
+		}
+	}
+
 	@Override
 	public List<ProductImage> getImagesByProduct(Long productId) {
-		return productImageRepository.findByProductId(productId);
+		return repo.findByProductId(productId);
 	}
 
-// ------------------------------------------------------------
-// UPDATE IMAGE
-// ------------------------------------------------------------
 	@Override
-	public ProductImage updateImage(Long imageId, ProductImageRequest request) {
-		ProductImage existing = productImageRepository.findById(imageId)
-				.orElseThrow(() -> new ResourceNotFoundException("Product image not found"));
+	public ProductImage updateImage(Long imageId, ProductImageRequest req) {
 
-		if (request.getImagePath() != null) {
-			existing.setImagePath(request.getImagePath());
-		}
+		ProductImage existing = repo.findById(imageId)
+				.orElseThrow(() -> new ResourceNotFoundException("Image not found"));
 
-		if (request.getPrimary() != null) {
-			existing.setPrimary(request.getPrimary());
-		}
+		if (req.getImagePath() != null)
+			existing.setImagePath(req.getImagePath());
 
-		if (request.getSortImageOrder() != null) {
-			existing.setSortImageOrder(request.getSortImageOrder());
-		}
+		if (req.getPrimary() != null)
+			existing.setPrimary(req.getPrimary());
 
-		productImageRepository.update(existing);
+		if (req.getSortImageOrder() != null)
+			existing.setSortImageOrder(req.getSortImageOrder());
+
+		repo.update(existing);
 		return existing;
 	}
 
-// ------------------------------------------------------------
-// SOFT DELETE
-// ------------------------------------------------------------
 	@Override
 	public void softDeleteImage(Long imageId) {
-		ProductImage existing = productImageRepository.findById(imageId)
-				.orElseThrow(() -> new ResourceNotFoundException("Product image not found"));
+		ProductImage existing = repo.findById(imageId)
+				.orElseThrow(() -> new ResourceNotFoundException("Image not found"));
 
-		productImageRepository.softDelete(existing.getId());
+		repo.softDelete(existing.getId());
 	}
 
-// ------------------------------------------------------------
-// SET PRIMARY IMAGE FOR PRODUCT
-// ------------------------------------------------------------
 	@Override
 	public void setPrimaryImage(Long productId, Long imageId) {
-// check image exists first
-		ProductImage existing = productImageRepository.findById(imageId)
-				.orElseThrow(() -> new ResourceNotFoundException("Product image not found"));
 
-		if (!existing.getProductId().equals(productId)) {
-			throw new ResourceNotFoundException("Image does not belong to this product");
-		}
+		ProductImage existing = repo.findById(imageId)
+				.orElseThrow(() -> new ResourceNotFoundException("Image not found"));
 
-		productImageRepository.setPrimaryImage(productId, imageId);
+		if (!existing.getProductId().equals(productId))
+			throw new ResourceNotFoundException("Image does not belong to product");
+
+		repo.setPrimaryImage(productId, imageId);
 	}
+
+	@Override
+	public Long getProductIdByImageId(Long imageId) {
+		return repo.findProductIdByImageId(imageId);
+	}
+
 }

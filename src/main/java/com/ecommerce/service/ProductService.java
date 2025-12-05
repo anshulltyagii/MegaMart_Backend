@@ -23,4 +23,11 @@ public interface ProductService {
 	boolean softDeleteProduct(Long id);
 
 	List<ProductResponse> searchProducts(String q, Long categoryId, int page, int size);
+
+	boolean shopBelongsToUser(Long shopId, Long userId);
+
+	boolean productBelongsToUser(Long productId, Long userId);
+
+	List<String> searchSuggestions(String query);
+
 }

@@ -2,96 +2,124 @@ package com.ecommerce.controller;
 
 import com.ecommerce.dto.ProductImageRequest;
 import com.ecommerce.model.ProductImage;
+import com.ecommerce.model.User;
+import com.ecommerce.enums.UserRole;
 import com.ecommerce.service.ProductImageService;
+import com.ecommerce.service.ProductService;
 import com.ecommerce.dto.ApiResponse;
 
-import org.springframework.http.HttpStatus;
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/**
- * Controller for Product Images
- */
 @RestController
 @RequestMapping("/api")
 public class ProductImageController {
 
-	private final ProductImageService productImageService;
+	private final ProductImageService service;
+	private final ProductService productService;
 
-	public ProductImageController(ProductImageService productImageService) {
-		this.productImageService = productImageService;
+	public ProductImageController(ProductImageService service, ProductService productService) {
+		this.service = service;
+		this.productService = productService;
 	}
 
-// ------------------------------------------------------------
-// 1) ADD IMAGE TO PRODUCT
-// POST /api/products/{productId}/images
-// ------------------------------------------------------------
+	// ------------------------------------------------------------
+	// Utility - Is admin OR shop owner of product?
+	// ------------------------------------------------------------
+	private boolean canAccess(Long productId, User currentUser) {
+		return currentUser.getRole() == UserRole.ADMIN
+				|| productService.productBelongsToUser(productId, currentUser.getId());
+	}
+
+	// ------------------------------------------------------------
+	// UPLOAD IMAGE (Admin + Shop Owner)
+	// ------------------------------------------------------------
+	@PostMapping("/products/{productId}/images/upload")
+	public ResponseEntity<ApiResponse<ProductImage>> upload(@PathVariable Long productId,
+			@RequestParam("file") MultipartFile file, @RequestAttribute("currentUser") User currentUser) {
+
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(false, "Not allowed", null));
+		}
+
+		ProductImage saved = service.uploadAndSave(productId, file);
+		return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(true, "Image uploaded", saved));
+	}
+
+	// ------------------------------------------------------------
+	// MANUAL ADD (Admin + Shop Owner)
+	// ------------------------------------------------------------
 	@PostMapping("/products/{productId}/images")
-	public ResponseEntity<ApiResponse<ProductImage>> addImageToProduct(@PathVariable Long productId,
-			@RequestBody ProductImageRequest request) {
+	public ResponseEntity<ApiResponse<ProductImage>> addManually(@PathVariable Long productId,
+			@RequestBody ProductImageRequest req, @RequestAttribute("currentUser") User currentUser) {
 
-		ProductImage saved = productImageService.addImageToProduct(productId, request);
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(false, "Not allowed", null));
+		}
 
-		ApiResponse<ProductImage> resp = new ApiResponse<>(true, "Product image added", saved);
-
-		return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+		ProductImage saved = service.addImageToProduct(productId, req);
+		return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(true, "Image added", saved));
 	}
 
-// ------------------------------------------------------------
-// 2) GET IMAGES FOR PRODUCT
-// GET /api/products/{productId}/images
-// ------------------------------------------------------------
+	// ------------------------------------------------------------
+	// PUBLIC: GET IMAGES
+	// ------------------------------------------------------------
 	@GetMapping("/products/{productId}/images")
-	public ResponseEntity<ApiResponse<List<ProductImage>>> getImagesByProduct(@PathVariable Long productId) {
-
-		List<ProductImage> images = productImageService.getImagesByProduct(productId);
-		ApiResponse<List<ProductImage>> resp = new ApiResponse<>(true, "Images fetched", images);
-
-		return ResponseEntity.ok(resp);
+	public ResponseEntity<ApiResponse<List<ProductImage>>> getImages(@PathVariable Long productId) {
+		return ResponseEntity.ok(new ApiResponse<>(true, "Fetched", service.getImagesByProduct(productId)));
 	}
 
-// ------------------------------------------------------------
-// 3) UPDATE IMAGE
-// PUT /api/product-images/{imageId}
-// ------------------------------------------------------------
+	// ------------------------------------------------------------
+	// UPDATE (Admin + Shop Owner)
+	// ------------------------------------------------------------
 	@PutMapping("/product-images/{imageId}")
-	public ResponseEntity<ApiResponse<ProductImage>> updateImage(@PathVariable Long imageId,
-			@RequestBody ProductImageRequest request) {
+	public ResponseEntity<ApiResponse<ProductImage>> update(@PathVariable Long imageId,
+			@RequestBody ProductImageRequest req, @RequestAttribute("currentUser") User currentUser) {
 
-		ProductImage updated = productImageService.updateImage(imageId, request);
-		ApiResponse<ProductImage> resp = new ApiResponse<>(true, "Image updated", updated);
+		Long productId = service.getProductIdByImageId(imageId);
 
-		return ResponseEntity.ok(resp);
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(false, "Not allowed", null));
+		}
+
+		return ResponseEntity.ok(new ApiResponse<>(true, "Updated", service.updateImage(imageId, req)));
 	}
 
-// ------------------------------------------------------------
-// 4) SOFT DELETE IMAGE
-// DELETE /api/product-images/{imageId}
-// ------------------------------------------------------------
+	// ------------------------------------------------------------
+	// DELETE (Admin + Shop Owner)
+	// ------------------------------------------------------------
 	@DeleteMapping("/product-images/{imageId}")
-	public ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable Long imageId) {
+	public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long imageId,
+			@RequestAttribute("currentUser") User currentUser) {
 
-		productImageService.softDeleteImage(imageId);
+		Long productId = service.getProductIdByImageId(imageId);
 
-		ApiResponse<Void> resp = new ApiResponse<>(true, "Image soft-deleted", null);
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(false, "Not allowed", null));
+		}
 
-		return ResponseEntity.ok(resp);
+		service.softDeleteImage(imageId);
+		return ResponseEntity.ok(new ApiResponse<>(true, "Soft deleted", null));
 	}
 
-// ------------------------------------------------------------
-// 5) SET PRIMARY IMAGE
-// PATCH /api/product-images/{imageId}/primary?productId=1
-// ------------------------------------------------------------
+	// ------------------------------------------------------------
+	// SET PRIMARY IMAGE (Admin + Shop Owner)
+	// ------------------------------------------------------------
 	@PatchMapping("/product-images/{imageId}/primary")
-	public ResponseEntity<ApiResponse<Void>> setPrimary(@PathVariable Long imageId, @RequestParam Long productId) {
+	public ResponseEntity<ApiResponse<Void>> setPrimary(@PathVariable Long imageId, @RequestParam Long productId,
+			@RequestAttribute("currentUser") User currentUser) {
 
-		productImageService.setPrimaryImage(productId, imageId);
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(false, "Not allowed", null));
+		}
 
-		ApiResponse<Void> resp = new ApiResponse<>(true, "Primary image set", null);
-
-		return ResponseEntity.ok(resp);
+		service.setPrimaryImage(productId, imageId);
+		return ResponseEntity.ok(new ApiResponse<>(true, "Primary set", null));
 	}
 }
-

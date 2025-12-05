@@ -21,23 +21,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * CART SERVICE IMPLEMENTATION - BULLETPROOF VERSION
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * Handles all edge cases:
- * - Null/invalid user IDs
- * - Null/invalid product IDs  
- * - Zero/negative quantities
- * - Product not found
- * - Cart item not found
- * - Unauthorized access
- * - Inactive/deleted products
- * 
- * @author Samadrita
- * @version 2.0 - Production Ready
- */
 @Service
 public class CartServiceImpl implements CartService {
 

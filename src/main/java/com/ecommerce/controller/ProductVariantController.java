@@ -1,7 +1,10 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.dto.*;
+import com.ecommerce.enums.UserRole;
+import com.ecommerce.model.User;
 import com.ecommerce.service.ProductVariantService;
+import com.ecommerce.service.ProductService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -13,91 +16,128 @@ import java.util.List;
 @RequestMapping("/api/products/{productId}/variants")
 public class ProductVariantController {
 
-private final ProductVariantService variantService;
+	private final ProductVariantService variantService;
+	private final ProductService productService;
 
-public ProductVariantController(ProductVariantService variantService) {
-this.variantService = variantService;
-}
+	public ProductVariantController(ProductVariantService variantService, ProductService productService) {
+		this.variantService = variantService;
+		this.productService = productService;
+	}
 
-// ------- GROUPS -------
+	// -----------------------------------------------------------
+	// UTILITY â€” CHECK ADMIN or SHOPKEEPER who owns the product
+	// -----------------------------------------------------------
+	private boolean canAccess(Long productId, User currentUser) {
+		return currentUser.getRole() == UserRole.ADMIN
+				|| productService.productBelongsToUser(productId, currentUser.getId());
+	}
 
-@PostMapping("/groups")
-public ResponseEntity<ProductVariantGroupResponse> createGroup(
-@PathVariable Long productId,
-@RequestBody ProductVariantGroupRequest request) {
-return new ResponseEntity<>(
-variantService.createGroup(productId, request),
-HttpStatus.CREATED
-);
-}
+	// -----------------------------------------------------------
+	// GROUPS
+	// -----------------------------------------------------------
 
-@GetMapping("/groups")
-public ResponseEntity<List<ProductVariantGroupResponse>> getGroups(
-@PathVariable Long productId) {
-return ResponseEntity.ok(variantService.getGroupsByProduct(productId));
-}
+	@PostMapping("/groups")
+	public ResponseEntity<?> createGroup(@PathVariable Long productId, @RequestBody ProductVariantGroupRequest request,
+			@RequestAttribute("currentUser") User currentUser) {
 
-@PutMapping("/groups/{groupId}")
-public ResponseEntity<ProductVariantGroupResponse> updateGroup(
-@PathVariable Long productId,
-@PathVariable Long groupId,
-@RequestBody ProductVariantGroupRequest request) {
-// productId unused, just for path consistency
-return ResponseEntity.ok(variantService.updateGroup(groupId, request));
-}
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(403).body(new ApiResponse<>(false, "Not allowed", null));
+		}
 
-@DeleteMapping("/groups/{groupId}")
-public ResponseEntity<String> deleteGroup(@PathVariable Long groupId) {
-variantService.deleteGroup(groupId);
-return ResponseEntity.ok("Variant group deleted");
-}
+		return new ResponseEntity<>(variantService.createGroup(productId, request), HttpStatus.CREATED);
+	}
 
-// ------- VALUES -------
+	@GetMapping("/groups")
+	public ResponseEntity<List<ProductVariantGroupResponse>> getGroups(@PathVariable Long productId) {
 
-@PostMapping("/groups/{groupId}/values")
-public ResponseEntity<ProductVariantValueResponse> createValue(
-@PathVariable Long groupId,
-@RequestBody ProductVariantValueRequest request) {
-return new ResponseEntity<>(
-variantService.createValue(groupId, request),
-HttpStatus.CREATED
-);
-}
+		return ResponseEntity.ok(variantService.getGroupsByProduct(productId));
+	}
 
-@GetMapping("/groups/{groupId}/values")
-public ResponseEntity<List<ProductVariantValueResponse>> getValues(
-@PathVariable Long groupId) {
-return ResponseEntity.ok(variantService.getValuesByGroup(groupId));
-}
+	@PutMapping("/groups/{groupId}")
+	public ResponseEntity<?> updateGroup(@PathVariable Long productId, @PathVariable Long groupId,
+			@RequestBody ProductVariantGroupRequest request, @RequestAttribute("currentUser") User currentUser) {
 
-@PutMapping("/values/{valueId}")
-public ResponseEntity<ProductVariantValueResponse> updateValue(
-@PathVariable Long valueId,
-@RequestBody ProductVariantValueRequest request) {
-return ResponseEntity.ok(variantService.updateValue(valueId, request));
-}
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(403).body(new ApiResponse<>(false, "Not allowed", null));
+		}
 
-@DeleteMapping("/values/{valueId}")
-public ResponseEntity<String> deleteValue(@PathVariable Long valueId) {
-variantService.deleteValue(valueId);
-return ResponseEntity.ok("Variant value deleted");
-}
+		return ResponseEntity.ok(variantService.updateGroup(groupId, request));
+	}
 
-// ------- STOCK -------
+	@DeleteMapping("/groups/{groupId}")
+	public ResponseEntity<?> deleteGroup(@PathVariable Long productId, @PathVariable Long groupId,
+			@RequestAttribute("currentUser") User currentUser) {
 
-@PostMapping("/values/{valueId}/stock")
-public ResponseEntity<ProductVariantStockResponse> upsertStock(
-@PathVariable Long productId,
-@PathVariable Long valueId,
-@RequestBody ProductVariantStockRequest request) {
-return ResponseEntity.ok(
-variantService.upsertStock(productId, valueId, request)
-);
-}
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(403).body(new ApiResponse<>(false, "Not allowed", null));
+		}
 
-@GetMapping("/stock")
-public ResponseEntity<List<ProductVariantStockResponse>> getStock(
-@PathVariable Long productId) {
-return ResponseEntity.ok(variantService.getStockByProduct(productId));
-}
+		variantService.deleteGroup(groupId);
+		return ResponseEntity.ok("Variant group deleted");
+	}
+
+	// -----------------------------------------------------------
+	// VALUES
+	// -----------------------------------------------------------
+
+	@PostMapping("/groups/{groupId}/values")
+	public ResponseEntity<?> createValue(@PathVariable Long productId, @PathVariable Long groupId,
+			@RequestBody ProductVariantValueRequest request, @RequestAttribute("currentUser") User currentUser) {
+
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(403).body(new ApiResponse<>(false, "Not allowed", null));
+		}
+
+		return new ResponseEntity<>(variantService.createValue(groupId, request), HttpStatus.CREATED);
+	}
+
+	@GetMapping("/groups/{groupId}/values")
+	public ResponseEntity<List<ProductVariantValueResponse>> getValues(@PathVariable Long groupId) {
+
+		return ResponseEntity.ok(variantService.getValuesByGroup(groupId));
+	}
+
+	@PutMapping("/values/{valueId}")
+	public ResponseEntity<?> updateValue(@PathVariable Long productId, @PathVariable Long valueId,
+			@RequestBody ProductVariantValueRequest request, @RequestAttribute("currentUser") User currentUser) {
+
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(403).body(new ApiResponse<>(false, "Not allowed", null));
+		}
+
+		return ResponseEntity.ok(variantService.updateValue(valueId, request));
+	}
+
+	@DeleteMapping("/values/{valueId}")
+	public ResponseEntity<?> deleteValue(@PathVariable Long productId, @PathVariable Long valueId,
+			@RequestAttribute("currentUser") User currentUser) {
+
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(403).body(new ApiResponse<>(false, "Not allowed", null));
+		}
+
+		variantService.deleteValue(valueId);
+		return ResponseEntity.ok("Variant value deleted");
+	}
+
+	// -----------------------------------------------------------
+	// STOCK
+	// -----------------------------------------------------------
+
+	@PostMapping("/values/{valueId}/stock")
+	public ResponseEntity<?> upsertStock(@PathVariable Long productId, @PathVariable Long valueId,
+			@RequestBody ProductVariantStockRequest request, @RequestAttribute("currentUser") User currentUser) {
+
+		if (!canAccess(productId, currentUser)) {
+			return ResponseEntity.status(403).body(new ApiResponse<>(false, "Not allowed", null));
+		}
+
+		return ResponseEntity.ok(variantService.upsertStock(productId, valueId, request));
+	}
+
+	@GetMapping("/stock")
+	public ResponseEntity<List<ProductVariantStockResponse>> getStock(@PathVariable Long productId) {
+
+		return ResponseEntity.ok(variantService.getStockByProduct(productId));
+	}
 }

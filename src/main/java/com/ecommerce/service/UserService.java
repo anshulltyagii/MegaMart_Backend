@@ -9,27 +9,34 @@ import java.util.Optional;
 
 public interface UserService {
 
-    // CREATE USER
-    UserResponse createUser(UserRequest request);
+	// CREATE USER
+	UserResponse createUser(UserRequest request);
 
-    // UPDATE USER
-    UserResponse updateUser(Long id, UserRequest request);
+	// UPDATE USER
+	UserResponse updateUser(Long id, UserRequest request);
 
-    // GET USER BY ID
-    UserResponse getUserById(Long id);
+	// GET USER BY ID
+	UserResponse getUserById(Long id);
 
-    // GET ACTIVE USER BY USERNAME (used in login)
-    Optional<User> getActiveUserByUsername(String username);
+	// GET ACTIVE USER BY USERNAME (used in login)
+	Optional<User> getActiveUserByUsername(String username);
 
-    // GET ALL ACTIVE USERS
-    List<UserResponse> getAllActiveUsers();
+	// GET ALL ACTIVE USERS
+	List<UserResponse> getAllActiveUsers();
 
-    // GET ALL USERS (ADMIN)
-    List<UserResponse> getAllUsers();
+	// GET ALL USERS (ADMIN)
+	List<UserResponse> getAllUsers();
 
-    // SOFT DELETE USER (account_status = SUSPENDED)
-    boolean softDeleteUser(Long id);
+	// SOFT DELETE USER (account_status = SUSPENDED)
+	boolean softDeleteUser(Long id);
 
-    // UPDATE ACCOUNT STATUS (Admin)
-    boolean updateAccountStatus(Long id, String status);
+	// UPDATE ACCOUNT STATUS (Admin)
+	boolean updateAccountStatus(Long id, String status);
+
+	boolean existsByUsername(String username);
+
+	boolean existsByEmail(String email);
+
+	boolean existsByPhone(String phone);
+
 }

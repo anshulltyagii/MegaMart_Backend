@@ -1,10 +1,16 @@
 package com.ecommerce.service;
 
-public class AuthService {
+import com.ecommerce.dto.LoginRequest;
+import com.ecommerce.dto.ResetPasswordRequest;
+import com.ecommerce.dto.UserRequest;
+import com.ecommerce.dto.UserResponse;
 
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+public interface AuthService {
 
-	}
+	UserResponse register(UserRequest request);
+
+	String login(LoginRequest request);
+
+	String resetPassword(ResetPasswordRequest req);
 
 }

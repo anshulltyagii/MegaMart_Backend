@@ -8,7 +8,10 @@ import org.springframework.stereotype.Service;
 
 import com.ecommerce.dto.ReviewRequest;
 import com.ecommerce.dto.ReviewResponse;
+import com.ecommerce.exception.BadRequestException;
+import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.model.Review;
+import com.ecommerce.repository.ProductRepository;
 import com.ecommerce.repository.ReviewRepository;
 import com.ecommerce.service.ReviewService;
 
@@ -18,9 +21,20 @@ public class ReviewServiceImpl implements ReviewService{
 	@Autowired
 	private ReviewRepository reviewRepository;
 	
+	@Autowired
+	private ProductRepository productRepository;
+	
 	@Override
 	public ReviewResponse addReview(Long userId, ReviewRequest request) {
-		 Review review = new Review();
+		 
+		if(request.getRating()<1 || request.getRating()>5) {
+			throw new BadRequestException("Rating must be between 1 and 5");
+		}
+		
+		productRepository.findById(request.getProductId())
+				.orElseThrow(()->new ResourceNotFoundException("Product not found with ID= "+request.getProductId()));	
+		
+		Review review = new Review();
 	        review.setProductId(request.getProductId());
 	        review.setUserId(userId);
 	        review.setRating(request.getRating());

@@ -1,11 +1,11 @@
 package com.ecommerce.service.impl;
 
-import com.ecommerce.dto.OrderItemResponse;
 import com.ecommerce.dto.PaymentRequest;
 import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.model.Order;
 import com.ecommerce.model.Payment;
+import com.ecommerce.dto.OrderItemResponse;
 import com.ecommerce.repository.OrderRepository;
 import com.ecommerce.repository.PaymentRepository;
 import com.ecommerce.service.InventoryService;
@@ -22,66 +22,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * PAYMENT SERVICE IMPLEMENTATION
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * SIMULATION MODE:
- * ----------------
- * Currently: DISABLED (100% success for testing)
- * 
- * To enable 50/50 simulation for SME demo:
- *   1. Set SIMULATION_ENABLED = true
- *   2. Set SUCCESS_RATE = 0.5
- * 
- * Features:
- * - Comprehensive logging (no System.out.println)
- * - Full edge case handling
- * - Transaction management
- * - Inventory integration
- * - Retry-friendly design
- * 
- * @author Samadrita (Order/Payment Module)
- * @version 3.0 - Testing Ready
- */
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
     
-    // ════════════════════════════════════════════════════════════════════════
-    // SIMULATION CONFIGURATION
-    // ════════════════════════════════════════════════════════════════════════
-    
-    /**
-     * ┌─────────────────────────────────────────────────────────────────────┐
-     * │ SIMULATION TOGGLE                                                   │
-     * ├─────────────────────────────────────────────────────────────────────┤
-     * │ false = All payments succeed (FOR TESTING)                          │
-     * │ true  = Random success/failure (FOR SME DEMO)                       │
-     * │                                                                     │
-     * │ TO ENABLE FOR SME DEMO: Change false to true below                  │
-     * └─────────────────────────────────────────────────────────────────────┘
-     */
-    private static final boolean SIMULATION_ENABLED = false;  // <-- CHANGE TO true FOR SME DEMO
-    
-    /**
-     * SUCCESS RATE (only used when SIMULATION_ENABLED = true)
-     * 0.5 = 50% success rate
-     */
+    private static final boolean SIMULATION_ENABLED = false; 
     private static final double SUCCESS_RATE = 0.5;
     
-    // Secure random for fair distribution (when simulation is enabled)
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    
-    // Date formatter for logging
     private static final DateTimeFormatter LOG_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
-    // ════════════════════════════════════════════════════════════════════════
-    // DEPENDENCIES
-    // ════════════════════════════════════════════════════════════════════════
-    
     private final PaymentRepository paymentRepo;
     private final OrderRepository orderRepo;
     private final InventoryService inventoryService;
@@ -95,13 +46,9 @@ public class PaymentServiceImpl implements PaymentService {
         
         log.info("════════════════════════════════════════════════════════════");
         log.info("PaymentService Initialized");
-        log.info("Simulation Mode: {}", SIMULATION_ENABLED ? "ENABLED (" + (int)(SUCCESS_RATE * 100) + "% success)" : "DISABLED (100% success)");
+        log.info("Simulation Mode: {}", SIMULATION_ENABLED ? "ENABLED" : "DISABLED");
         log.info("════════════════════════════════════════════════════════════");
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // MAIN PAYMENT METHOD
-    // ════════════════════════════════════════════════════════════════════════
     
     @Override
     @Transactional
@@ -114,36 +61,25 @@ public class PaymentServiceImpl implements PaymentService {
         
         try {
             // ─────────────────────────────────────────────────────────────────
-            // STEP 1: VALIDATE REQUEST
+            // STEP 1: VALIDATION
             // ─────────────────────────────────────────────────────────────────
             log.info("[{}] STEP 1: Validating request...", correlationId);
             validateRequest(request, correlationId);
-            log.info("[{}] STEP 1: ✓ Request validation passed", correlationId);
 
-            // ─────────────────────────────────────────────────────────────────
-            // STEP 2: VALIDATE ORDER
-            // ─────────────────────────────────────────────────────────────────
             log.info("[{}] STEP 2: Validating order...", correlationId);
             Order order = validateAndGetOrder(request.getOrderId(), correlationId);
-            log.info("[{}] STEP 2: ✓ Order validation passed (Status: {}, PaymentStatus: {})", 
-                    correlationId, order.getStatus(), order.getPaymentStatus());
 
-            // ─────────────────────────────────────────────────────────────────
-            // STEP 3: VALIDATE AMOUNT
-            // ─────────────────────────────────────────────────────────────────
             log.info("[{}] STEP 3: Validating amount...", correlationId);
             validateAmount(request.getAmount(), order.getTotalAmount(), correlationId);
-            log.info("[{}] STEP 3: ✓ Amount validation passed (₹{})", correlationId, order.getTotalAmount());
 
             // ─────────────────────────────────────────────────────────────────
-            // STEP 4: CREATE PAYMENT RECORD
+            // STEP 4: CREATE RECORD
             // ─────────────────────────────────────────────────────────────────
             log.info("[{}] STEP 4: Creating payment record...", correlationId);
             Payment payment = createPaymentRecord(request, correlationId);
-            log.info("[{}] STEP 4: ✓ Payment record created (TXN: {})", correlationId, payment.getTxnReference());
 
             // ─────────────────────────────────────────────────────────────────
-            // STEP 5: PROCESS PAYMENT (SIMULATION)
+            // STEP 5: PROCESS (SIMULATION)
             // ─────────────────────────────────────────────────────────────────
             log.info("[{}] STEP 5: Processing payment...", correlationId);
             boolean success = processPaymentGateway(correlationId);
@@ -153,296 +89,157 @@ public class PaymentServiceImpl implements PaymentService {
                 // SUCCESS PATH
                 // ─────────────────────────────────────────────────────────────
                 finalStatus = "SUCCESS";
-                payment.setStatus("SUCCESS");
                 
                 log.info("[{}] ══════════════════════════════════════════════", correlationId);
-                log.info("[{}] PAYMENT SUCCESS - Executing success path", correlationId);
-                log.info("[{}] ══════════════════════════════════════════════", correlationId);
+                log.info("[{}] TRANSACTION SUCCESSFUL", correlationId);
 
-                // Update order status
-                log.info("[{}] STEP 6: Updating order status to PAID/CONFIRMED...", correlationId);
-                orderRepo.updatePaymentStatus(order.getId(), "PAID", "CONFIRMED");
-                log.info("[{}] STEP 6: ✓ Order status updated", correlationId);
+                // ✅ COD SPECIFIC LOGIC
+                if ("COD".equalsIgnoreCase(request.getMethod())) {
+                    log.info("[{}] Method is COD -> Order: CONFIRMED, Payment: PENDING", correlationId);
+                    
+                    // Update Order Table -> Keeps business logic correct (Pending Payment)
+                    orderRepo.updatePaymentStatus(order.getId(), "PENDING", "CONFIRMED");
+                    
+                    // ✅ FIX: Mark Payment Record as SUCCESS to prevent DB Crash
+                    // (The "Transaction" was successfully recorded, even if money isn't collected yet)
+                    payment.setStatus("SUCCESS"); 
+                } else {
+                    // ✅ ONLINE PAYMENT LOGIC
+                    log.info("[{}] Method is ONLINE -> Order: CONFIRMED, Payment: PAID", correlationId);
+                    
+                    // Update Order Table
+                    orderRepo.updatePaymentStatus(order.getId(), "PAID", "CONFIRMED");
+                    
+                    // Update Payment Record Status
+                    payment.setStatus("SUCCESS");
+                }
 
                 // Consume inventory
                 log.info("[{}] STEP 7: Consuming reserved inventory...", correlationId);
                 consumeInventory(order.getId(), correlationId);
-                log.info("[{}] STEP 7: ✓ Inventory consumed", correlationId);
 
             } else {
                 // ─────────────────────────────────────────────────────────────
-                // FAILURE PATH (Only when SIMULATION_ENABLED = true)
+                // FAILURE PATH
                 // ─────────────────────────────────────────────────────────────
                 finalStatus = "FAILED";
                 payment.setStatus("FAILED");
                 
-                log.warn("[{}] ══════════════════════════════════════════════", correlationId);
-                log.warn("[{}] PAYMENT FAILED - Executing failure path", correlationId);
-                log.warn("[{}] ══════════════════════════════════════════════", correlationId);
-
-                // Update payment status only (order stays PLACED for retry)
-                log.warn("[{}] STEP 6: Updating payment status to FAILED...", correlationId);
-                orderRepo.updatePaymentStatus(order.getId(), "FAILED", "PLACED");
-                log.warn("[{}] STEP 6: ✓ Payment status updated (Order remains PLACED for retry)", correlationId);
+                log.warn("[{}] TRANSACTION FAILED", correlationId);
                 
-                log.warn("[{}] STEP 7: Skipped - Inventory remains reserved", correlationId);
+                // Keep order as PLACED but mark payment failed
+                orderRepo.updatePaymentStatus(order.getId(), "FAILED", "PLACED");
             }
 
             // ─────────────────────────────────────────────────────────────────
-            // STEP 8: SAVE PAYMENT RECORD
+            // STEP 8: SAVE
             // ─────────────────────────────────────────────────────────────────
             log.info("[{}] STEP 8: Saving payment record...", correlationId);
             Payment savedPayment = paymentRepo.save(payment);
-            log.info("[{}] STEP 8: ✓ Payment saved (ID: {})", correlationId, savedPayment.getId());
-
+            
             return savedPayment;
 
-        } catch (BadRequestException e) {
-            finalStatus = "REJECTED";
-            log.error("[{}] ✗ PAYMENT REJECTED: {}", correlationId, e.getMessage());
-            throw e;
-            
-        } catch (ResourceNotFoundException e) {
-            finalStatus = "NOT_FOUND";
-            log.error("[{}] ✗ RESOURCE NOT FOUND: {}", correlationId, e.getMessage());
-            throw e;
-            
         } catch (Exception e) {
             finalStatus = "ERROR";
-            log.error("[{}] ✗ UNEXPECTED ERROR: {}", correlationId, e.getMessage(), e);
-            throw new RuntimeException("Payment processing failed: " + e.getMessage(), e);
-            
+            log.error("[{}] ✗ UNEXPECTED ERROR: {}", correlationId, e.getMessage());
+            throw new BadRequestException("Payment processing failed: " + e.getMessage());
         } finally {
             logPaymentEnd(correlationId, finalStatus, startTime);
         }
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // VALIDATION METHODS - ALL EDGE CASES HANDLED
+    // VALIDATION & HELPERS
     // ════════════════════════════════════════════════════════════════════════
 
     private void validateRequest(PaymentRequest request, String correlationId) {
-        // Edge Case 1: Null request
-        if (request == null) {
-            log.error("[{}] Request is null", correlationId);
+        if (request == null || request.getOrderId() == null || request.getAmount() == null) {
             throw new BadRequestException("Payment request cannot be null");
         }
-        
-        // Edge Case 2: Null order ID
-        if (request.getOrderId() == null) {
-            log.error("[{}] Order ID is null", correlationId);
-            throw new BadRequestException("Order ID is required");
-        }
-        
-        // Edge Case 3: Null amount
-        if (request.getAmount() == null) {
-            log.error("[{}] Amount is null", correlationId);
-            throw new BadRequestException("Payment amount is required");
-        }
-        
-        // Edge Case 4: Zero or negative amount
         if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            log.error("[{}] Amount is not positive: {}", correlationId, request.getAmount());
             throw new BadRequestException("Payment amount must be greater than zero");
         }
-        
-        // Edge Case 5: Null or empty payment method
         if (request.getMethod() == null || request.getMethod().trim().isEmpty()) {
-            log.error("[{}] Payment method is empty", correlationId);
             throw new BadRequestException("Payment method is required");
         }
-        
-        // Edge Case 6: Invalid payment method
-        String method = request.getMethod().toUpperCase();
-        if (!isValidPaymentMethod(method)) {
-            log.error("[{}] Invalid payment method: {}", correlationId, method);
-            throw new BadRequestException("Invalid payment method: " + method + ". Supported: UPI, CARD, NET_BANKING, WALLET, COD");
-        }
-    }
-
-    private boolean isValidPaymentMethod(String method) {
-        return method.equals("UPI") || 
-               method.equals("CARD") || 
-               method.equals("NET_BANKING") || 
-               method.equals("WALLET") || 
-               method.equals("COD");
     }
 
     private Order validateAndGetOrder(Long orderId, String correlationId) {
-        // Edge Case 7: Order not found
         Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> {
-                    log.error("[{}] Order not found: {}", correlationId, orderId);
-                    return new ResourceNotFoundException("Order not found with ID: " + orderId);
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        // Edge Case 8: Already paid
         if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
-            log.error("[{}] Order {} is already paid", correlationId, orderId);
-            throw new BadRequestException("Order is already paid. Payment cannot be processed again.");
+            throw new BadRequestException("Order is already paid");
         }
-
-        // Edge Case 9: Order cancelled
         if ("CANCELLED".equalsIgnoreCase(order.getStatus())) {
-            log.error("[{}] Order {} is cancelled", correlationId, orderId);
-            throw new BadRequestException("Cannot pay for a cancelled order. Please create a new order.");
+            throw new BadRequestException("Cannot pay for a cancelled order");
         }
-
-        // Edge Case 10: Order already shipped
-        if ("SHIPPED".equalsIgnoreCase(order.getStatus())) {
-            log.error("[{}] Order {} is already shipped", correlationId, orderId);
-            throw new BadRequestException("Order is already shipped. Payment not required.");
+        if ("SHIPPED".equalsIgnoreCase(order.getStatus()) || "DELIVERED".equalsIgnoreCase(order.getStatus())) {
+            throw new BadRequestException("Order is already processed");
         }
-
-        // Edge Case 11: Order already delivered
-        if ("DELIVERED".equalsIgnoreCase(order.getStatus())) {
-            log.error("[{}] Order {} is already delivered", correlationId, orderId);
-            throw new BadRequestException("Order is already delivered. Payment not required.");
-        }
-
-        // Edge Case 12: Order returned
-        if ("RETURNED".equalsIgnoreCase(order.getStatus())) {
-            log.error("[{}] Order {} is returned", correlationId, orderId);
-            throw new BadRequestException("Cannot pay for a returned order.");
-        }
-
-        // Edge Case 13: Unusual state - CONFIRMED but not PAID
-        if ("CONFIRMED".equalsIgnoreCase(order.getStatus()) && !"PAID".equalsIgnoreCase(order.getPaymentStatus())) {
-            log.warn("[{}] Order {} is CONFIRMED but not PAID - unusual state, allowing payment", correlationId, orderId);
-        }
-
         return order;
     }
 
-    private void validateAmount(BigDecimal requestAmount, BigDecimal orderAmount, String correlationId) {
-        // Edge Case 14: Amount mismatch
-        if (requestAmount.compareTo(orderAmount) != 0) {
-            log.error("[{}] Amount mismatch - Expected: ₹{}, Got: ₹{}", correlationId, orderAmount, requestAmount);
-            throw new BadRequestException("Payment amount mismatch! Expected: ₹" + orderAmount + ", Got: ₹" + requestAmount);
+    private void validateAmount(BigDecimal reqAmount, BigDecimal orderAmount, String correlationId) {
+        if (reqAmount.compareTo(orderAmount) != 0) {
+            throw new BadRequestException("Amount mismatch! Expected: " + orderAmount + ", Got: " + reqAmount);
         }
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // PAYMENT GATEWAY SIMULATION
-    // ════════════════════════════════════════════════════════════════════════
-
-    private boolean processPaymentGateway(String correlationId) {
-        if (!SIMULATION_ENABLED) {
-            // Simulation disabled - always succeed (FOR TESTING)
-            log.info("[{}] Payment Gateway: SIMULATION DISABLED - Returning SUCCESS", correlationId);
-            return true;
-        }
-        
-        // Simulation enabled - random success/failure (FOR SME DEMO)
-        double randomValue = SECURE_RANDOM.nextDouble();
-        boolean success = randomValue < SUCCESS_RATE;
-        
-        log.info("[{}] ┌───────────────────────────────────────┐", correlationId);
-        log.info("[{}] │ PAYMENT GATEWAY SIMULATION            │", correlationId);
-        log.info("[{}] ├───────────────────────────────────────┤", correlationId);
-        log.info("[{}] │ Random Value : {}                │", correlationId, String.format("%.4f", randomValue));
-        log.info("[{}] │ Success Rate : {}                  │", correlationId, String.format("%.2f", SUCCESS_RATE));
-        log.info("[{}] │ Result       : {}              │", correlationId, success ? "SUCCESS ✓" : "FAILED ✗ ");
-        log.info("[{}] └───────────────────────────────────────┘", correlationId);
-        
-        return success;
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // INVENTORY MANAGEMENT
-    // ════════════════════════════════════════════════════════════════════════
-
-    private void consumeInventory(Long orderId, String correlationId) {
-        List<OrderItemResponse> items = orderRepo.findItemsByOrderId(orderId);
-        
-        // Edge Case 15: No items in order
-        if (items == null || items.isEmpty()) {
-            log.warn("[{}] No items found for order {} - skipping inventory consumption", correlationId, orderId);
-            return;
-        }
-        
-        log.info("[{}] Processing {} items for inventory consumption", correlationId, items.size());
-        
-        int successCount = 0;
-        int failCount = 0;
-        
-        for (OrderItemResponse item : items) {
-            try {
-                inventoryService.consumeReservedOnOrder(item.getProductId(), item.getQuantity());
-                successCount++;
-                log.info("[{}]   ✓ Product {}: consumed {} units", 
-                        correlationId, item.getProductId(), item.getQuantity());
-            } catch (Exception e) {
-                // Edge Case 16: Inventory consumption fails
-                failCount++;
-                log.error("[{}]   ✗ Product {}: failed to consume - {}", 
-                        correlationId, item.getProductId(), e.getMessage());
-            }
-        }
-        
-        log.info("[{}] Inventory summary: {} succeeded, {} failed", correlationId, successCount, failCount);
-        
-        if (failCount > 0) {
-            log.warn("[{}] Some inventory consumption failed - manual intervention may be required", correlationId);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // HELPER METHODS
-    // ════════════════════════════════════════════════════════════════════════
 
     private Payment createPaymentRecord(PaymentRequest request, String correlationId) {
         Payment payment = new Payment();
         payment.setOrderId(request.getOrderId());
         payment.setAmount(request.getAmount());
         payment.setMethod(request.getMethod().toUpperCase());
-        payment.setTxnReference(request.getTxnReference() != null ? 
-                request.getTxnReference() : generateTxnReference());
+        
+        // Generate TXN ID based on method
+        String prefix = "COD".equalsIgnoreCase(request.getMethod()) ? "COD-" : "TXN-";
+        String ref = request.getTxnReference() != null ? request.getTxnReference() : prefix + System.currentTimeMillis();
+        
+        payment.setTxnReference(ref);
         payment.setCreatedAt(LocalDateTime.now());
         return payment;
+    }
+
+    private boolean processPaymentGateway(String correlationId) {
+        // If simulation enabled, use random chance. If disabled, always success.
+        return !SIMULATION_ENABLED || SECURE_RANDOM.nextDouble() < SUCCESS_RATE;
+    }
+
+    private void consumeInventory(Long orderId, String correlationId) {
+        try {
+            List<OrderItemResponse> items = orderRepo.findItemsByOrderId(orderId);
+            for (OrderItemResponse item : items) {
+                try {
+                    inventoryService.consumeReservedOnOrder(item.getProductId(), item.getQuantity());
+                    log.info("[{}]   ✓ Consumed product {}", correlationId, item.getProductId());
+                } catch (Exception e) {
+                    log.warn("[{}]   ⚠ Failed to consume product {}: {}", correlationId, item.getProductId(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[{}] Inventory consumption error: {}", correlationId, e.getMessage());
+        }
     }
 
     private String generateCorrelationId() {
         return "PAY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    private String generateTxnReference() {
-        return "TXN-" + System.currentTimeMillis();
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // LOGGING HELPERS
-    // ════════════════════════════════════════════════════════════════════════
-
-    private void logPaymentStart(String correlationId, PaymentRequest request, LocalDateTime startTime) {
+    private void logPaymentStart(String id, PaymentRequest req, LocalDateTime start) {
         log.info("┌────────────────────────────────────────────────────────────┐");
         log.info("│ PAYMENT PROCESSING STARTED                                 │");
-        log.info("├────────────────────────────────────────────────────────────┤");
-        log.info("│ Correlation ID : {}                           │", correlationId);
-        log.info("│ Timestamp      : {} │", startTime.format(LOG_FORMAT));
-        log.info("│ Order ID       : {}                                       │", padRight(String.valueOf(request.getOrderId()), 7));
-        log.info("│ Amount         : ₹{}                                   │", padRight(String.valueOf(request.getAmount()), 10));
-        log.info("│ Method         : {}                                    │", padRight(request.getMethod(), 9));
-        log.info("│ Simulation     : {}                                 │", padRight(SIMULATION_ENABLED ? "ENABLED" : "DISABLED", 12));
+        log.info("│ ID: {} | Method: {} | Order: {} │", id, req.getMethod(), req.getOrderId());
         log.info("└────────────────────────────────────────────────────────────┘");
     }
 
-    private void logPaymentEnd(String correlationId, String finalStatus, LocalDateTime startTime) {
-        LocalDateTime endTime = LocalDateTime.now();
-        long durationMs = java.time.Duration.between(startTime, endTime).toMillis();
-        
-        log.info("┌────────────────────────────────────────────────────────────┐");
-        log.info("│ PAYMENT PROCESSING COMPLETED                               │");
-        log.info("├────────────────────────────────────────────────────────────┤");
-        log.info("│ Correlation ID : {}                           │", correlationId);
-        log.info("│ Final Status   : {}                                  │", padRight(finalStatus, 10));
-        log.info("│ Duration       : {} ms                                    │", padRight(String.valueOf(durationMs), 5));
-        log.info("│ End Time       : {} │", endTime.format(LOG_FORMAT));
-        log.info("└────────────────────────────────────────────────────────────┘");
+    private void logPaymentEnd(String id, String status, LocalDateTime start) {
+        log.info("Payment Process Ended [{}] Status: {}", id, status);
     }
 
-    private String padRight(String s, int n) {
-        if (s == null) s = "NULL";
-        return String.format("%-" + n + "s", s);
+    @Override
+    public Payment getPaymentByOrderId(Long orderId) {
+        return paymentRepo.findByOrderId(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
     }
 }

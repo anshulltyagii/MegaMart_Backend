@@ -17,136 +17,113 @@ import java.util.Optional;
 @Repository
 public class ProductImageRepositoryImpl implements ProductImageRepository {
 
-	private final JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbc;
 
-	public ProductImageRepositoryImpl(JdbcTemplate jdbcTemplate) {
-		this.jdbcTemplate = jdbcTemplate;
+	public ProductImageRepositoryImpl(JdbcTemplate jdbc) {
+		this.jdbc = jdbc;
 	}
 
-// ------------------------------------------------------------
-// SAVE NEW IMAGE
-// ------------------------------------------------------------
 	@Override
-	public Long save(ProductImage image) {
+	public Long save(ProductImage img) {
 		String sql = """
 				INSERT INTO product_images
 				(product_id, image_path, is_primary, sort_image_order, is_deleted)
 				VALUES (?, ?, ?, ?, ?)
 				""";
 
-		KeyHolder keyHolder = new GeneratedKeyHolder();
+		KeyHolder key = new GeneratedKeyHolder();
 
-		jdbcTemplate.update(connection -> {
-			PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			ps.setLong(1, image.getProductId());
-			ps.setString(2, image.getImagePath());
-			ps.setBoolean(3, image.isPrimary());
-			ps.setInt(4, image.getSortImageOrder());
-			ps.setBoolean(5, image.isDeleted());
+		jdbc.update(con -> {
+			PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+			ps.setLong(1, img.getProductId());
+			ps.setString(2, img.getImagePath());
+			ps.setBoolean(3, img.isPrimary());
+			ps.setInt(4, img.getSortImageOrder());
+			ps.setBoolean(5, img.isDeleted());
 			return ps;
-		}, keyHolder);
+		}, key);
 
-		return keyHolder.getKey().longValue();
+		return key.getKey().longValue();
 	}
 
-// ------------------------------------------------------------
-// UPDATE IMAGE
-// ------------------------------------------------------------
 	@Override
-	public boolean update(ProductImage image) {
+	public boolean update(ProductImage img) {
 		String sql = """
 				UPDATE product_images SET
-				image_path = ?,
-				is_primary = ?,
-				sort_image_order = ?,
-				is_deleted = ?
-				WHERE id = ?
+				image_path=?, is_primary=?, sort_image_order=?, is_deleted=?
+				WHERE id=?
 				""";
 
-		int rows = jdbcTemplate.update(sql, image.getImagePath(), image.isPrimary(), image.getSortImageOrder(),
-				image.isDeleted(), image.getId());
-
-		return rows > 0;
+		return jdbc.update(sql, img.getImagePath(), img.isPrimary(), img.getSortImageOrder(), img.isDeleted(),
+				img.getId()) > 0;
 	}
 
-// ------------------------------------------------------------
-// SOFT DELETE IMAGE (is_deleted = true)
-// ------------------------------------------------------------
 	@Override
 	public boolean softDelete(Long id) {
-		String sql = "UPDATE product_images SET is_deleted = TRUE WHERE id = ?";
-		return jdbcTemplate.update(sql, id) > 0;
+		return jdbc.update("UPDATE product_images SET is_deleted=TRUE WHERE id=?", id) > 0;
 	}
 
-// ------------------------------------------------------------
-// FIND BY ID
-// ------------------------------------------------------------
 	@Override
 	public Optional<ProductImage> findById(Long id) {
-		String sql = "SELECT * FROM product_images WHERE id = ?";
-
-		List<ProductImage> list = jdbcTemplate.query(sql, new ProductImageRowMapper(), id);
-
+		List<ProductImage> list = jdbc.query("SELECT * FROM product_images WHERE id=?", new ProductImageRowMapper(),
+				id);
 		return list.stream().findFirst();
 	}
 
-// ------------------------------------------------------------
-// FIND NON-DELETED IMAGES BY PRODUCT
-// ------------------------------------------------------------
 	@Override
 	public List<ProductImage> findByProductId(Long productId) {
 		String sql = """
 				SELECT * FROM product_images
-				WHERE product_id = ?
-				AND is_deleted = FALSE
+				WHERE product_id=? AND is_deleted=FALSE
 				ORDER BY sort_image_order ASC, id ASC
 				""";
-
-		return jdbcTemplate.query(sql, new ProductImageRowMapper(), productId);
+		return jdbc.query(sql, new ProductImageRowMapper(), productId);
 	}
 
-// ------------------------------------------------------------
-// FIND ALL IMAGES FOR PRODUCT (including deleted)
-// ------------------------------------------------------------
 	@Override
 	public List<ProductImage> findAllByProductIdIncludeDeleted(Long productId) {
 		String sql = """
 				SELECT * FROM product_images
-				WHERE product_id = ?
+				WHERE product_id=?
 				ORDER BY sort_image_order ASC, id ASC
 				""";
-
-		return jdbcTemplate.query(sql, new ProductImageRowMapper(), productId);
+		return jdbc.query(sql, new ProductImageRowMapper(), productId);
 	}
 
-// ------------------------------------------------------------
-// CLEAR PRIMARY FLAG FOR ALL IMAGES OF PRODUCT
-// ------------------------------------------------------------
 	@Override
 	public boolean clearPrimaryForProduct(Long productId) {
-		String sql = """
-				UPDATE product_images
-				SET is_primary = FALSE
-				WHERE product_id = ?
-				""";
-		return jdbcTemplate.update(sql, productId) > 0;
+		return jdbc.update("UPDATE product_images SET is_primary=FALSE WHERE product_id=?", productId) > 0;
 	}
 
-// ------------------------------------------------------------
-// SET PRIMARY IMAGE (ENSURE ONLY ONE PRIMARY)
-// ------------------------------------------------------------
 	@Override
 	public boolean setPrimaryImage(Long productId, Long imageId) {
-// Step 1: clear all primary flags
+
 		clearPrimaryForProduct(productId);
 
-// Step 2: set primary for specific image
-		String sql = """
-				UPDATE product_images
-				SET is_primary = TRUE
-				WHERE id = ? AND product_id = ? AND is_deleted = FALSE
-				""";
-
-		return jdbcTemplate.update(sql, imageId, productId) > 0;
+		return jdbc.update("""
+				UPDATE product_images SET is_primary=TRUE
+				WHERE id=? AND product_id=? AND is_deleted=FALSE
+				""", imageId, productId) > 0;
 	}
+
+	@Override
+	public Integer findMaxSortOrder(Long productId) {
+		String sql = """
+				SELECT COALESCE(MAX(sort_image_order), -1)
+				FROM product_images
+				WHERE product_id=? AND is_deleted=FALSE
+				""";
+		return jdbc.queryForObject(sql, Integer.class, productId);
+	}
+
+	@Override
+	public Long findProductIdByImageId(Long imageId) {
+		String sql = "SELECT product_id FROM product_images WHERE id = ?";
+		try {
+			return jdbc.queryForObject(sql, Long.class, imageId);
+		} catch (Exception e) {
+			return null; // or throw custom exception
+		}
+	}
+
 }

@@ -22,6 +22,7 @@ public class CartItemRowMapper implements RowMapper<CartItem> {
             if(rs.findColumn("current_price") > 0) item.setCurrentPrice(rs.getBigDecimal("current_price"));
             if(rs.findColumn("shop_id") > 0) item.setShopId(rs.getLong("shop_id"));
             if(rs.findColumn("shop_name") > 0) item.setShopName(rs.getString("shop_name"));
+            if(rs.findColumn("image_path") > 0) item.setImagePath(rs.getString("image_path"));
         } catch (SQLException e) {
             // Columns might not be in the select statement, ignore
         }
