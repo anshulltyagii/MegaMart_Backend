@@ -1,6 +1,8 @@
 
       package com.ecommerce.service.impl;
 
+import java.util.List;
+
 import com.ecommerce.dto.*;
 import com.ecommerce.model.*;
 
@@ -75,5 +77,19 @@ public class DtoMapper {
 
         return r;
     }
+    
+    public static OrderResponse orderToResponse(Order o, List<OrderItemResponse> items) {
+        OrderResponse r = new OrderResponse();
+        r.setOrderId(o.getId());
+        r.setOrderNumber(o.getOrderNumber());
+        r.setTotalAmount(o.getTotalAmount());
+        r.setStatus(o.getStatus());
+        r.setPaymentStatus(o.getPaymentStatus());
+        r.setShippingAddress(o.getShippingAddress());
+        r.setCreatedAt(o.getCreatedAt() != null ? o.getCreatedAt().toString() : null);
+        r.setItems(items);
+        return r;
+    }
+
 }
         

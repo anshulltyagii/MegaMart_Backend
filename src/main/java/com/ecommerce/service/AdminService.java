@@ -3,6 +3,7 @@ package com.ecommerce.service;
 import com.ecommerce.dto.AdminLogResponse;
 import com.ecommerce.dto.CouponRequest;
 import com.ecommerce.dto.CouponResponse;
+import com.ecommerce.dto.OrderResponse;
 import com.ecommerce.dto.ShopResponse;
 import com.ecommerce.dto.UserResponse;
 
@@ -17,6 +18,7 @@ public interface AdminService {
 
     List<ShopResponse> getAllShops(Long adminUserId);
     List<ShopResponse> getPendingShops(Long adminUserId);
+    List<ShopResponse> getEveryShop(Long adminUserId);
 
     ShopResponse getShopById(Long adminUserId,Long shopId);
     boolean approveShop(Long adminUserId, Long shopId);
@@ -34,4 +36,6 @@ public interface AdminService {
    
     // simple utility for controllers/tests to log action (if needed)
     void logAction(Long adminUserId, String action);
+    
+   
 }

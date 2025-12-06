@@ -73,24 +73,41 @@ public class UserServiceImpl implements UserService {
 
 		User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-		// DO NOT allow duplicate username (except same user)
-		if (!user.getUsername().equals(request.getUsername())
-				&& userRepository.existsByUsername(request.getUsername())) {
-			throw new BadRequestException("Username already exists!");
+		// ---------------- USERNAME UPDATE (ONLY IF PROVIDED) ----------------
+		if (request.getUsername() != null && !request.getUsername().isBlank()) {
+
+			if (!user.getUsername().equals(request.getUsername())
+					&& userRepository.existsByUsername(request.getUsername())) {
+				throw new BadRequestException("Username already exists!");
+			}
+
+			user.setUsername(request.getUsername());
 		}
 
-		// DO NOT allow duplicate email
-		if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
-			throw new BadRequestException("Email already exists!");
+		// ---------------- EMAIL UPDATE (ONLY IF PROVIDED) ----------------
+		if (request.getEmail() != null && !request.getEmail().isBlank()) {
+
+			if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+				throw new BadRequestException("Email already exists!");
+			}
+
+			user.setEmail(request.getEmail());
 		}
 
-		user.setUsername(request.getUsername());
-		user.setEmail(request.getEmail());
-		user.setFullName(request.getFullName());
-		user.setPhone(request.getPhone());
-		user.setRole(UserRole.valueOf(request.getRole().toUpperCase()));
+		// ---------------- FULL NAME UPDATE ----------------
+		if (request.getFullName() != null) {
+			user.setFullName(request.getFullName());
+		}
 
-		// Update account status if provided
+		// ---------------- PHONE UPDATE ----------------
+		if (request.getPhone() != null) {
+			user.setPhone(request.getPhone());
+		}
+
+		// ---------------- ROLE MUST NEVER BE UPDATED ----------------
+		// Do NOT update user.setRole(request.getRole());
+
+		// ---------------- ACCOUNT STATUS UPDATE (ADMIN) ----------------
 		if (request.getAccountStatus() != null) {
 			user.setAccountStatus(AccountStatus.valueOf(request.getAccountStatus().toUpperCase()));
 		}

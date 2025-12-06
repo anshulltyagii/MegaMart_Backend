@@ -38,7 +38,7 @@ public class ProductController {
 	// --------------------------------------------------------------
 	// CREATE PRODUCT → ONLY SHOPKEEPER OR ADMIN
 	// --------------------------------------------------------------
-	@PostMapping
+	@PostMapping("/manage")
 	public ResponseEntity<?> createProduct(@RequestBody ProductRequest request, HttpServletRequest req) {
 
 		User user = getAuthenticatedUser(req);
@@ -59,7 +59,7 @@ public class ProductController {
 	// --------------------------------------------------------------
 	// UPDATE PRODUCT → SHOPKEEPER (owner) or ADMIN
 	// --------------------------------------------------------------
-	@PutMapping("/{id}")
+	@PutMapping("/manage/{id}")
 	public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody ProductRequest request,
 			HttpServletRequest req) {
 
@@ -89,12 +89,15 @@ public class ProductController {
 	// --------------------------------------------------------------
 	// PUBLIC → List active products
 	// --------------------------------------------------------------
+	// PUBLIC → List active products with category filter
 	@GetMapping
-	public ResponseEntity<List<ProductResponse>> listActive(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size) {
-
-		List<ProductResponse> list = productService.searchProducts(null, null, page, size);
-		return ResponseEntity.ok(list);
+	public ResponseEntity<List<ProductResponse>> listActive(
+	        @RequestParam(required = false) Long categoryId,
+	        @RequestParam(defaultValue = "0") int page,
+	        @RequestParam(defaultValue = "20") int size
+	) {
+	    List<ProductResponse> list = productService.searchProducts(null, categoryId, page, size);
+	    return ResponseEntity.ok(list);
 	}
 
 	// --------------------------------------------------------------
@@ -116,7 +119,7 @@ public class ProductController {
 	// --------------------------------------------------------------
 	// DELETE PRODUCT (SOFT) → SHOPKEEPER or ADMIN
 	// --------------------------------------------------------------
-	@DeleteMapping("/{id}")
+	@DeleteMapping("/manage/{id}")
 	public ResponseEntity<?> softDelete(@PathVariable Long id, HttpServletRequest req) {
 
 		User user = getAuthenticatedUser(req);

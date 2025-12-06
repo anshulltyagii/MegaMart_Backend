@@ -8,37 +8,62 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private final JwtAuthInterceptor jwtAuthInterceptor;
+	private final JwtAuthInterceptor jwtAuthInterceptor;
 
-    public WebConfig(JwtAuthInterceptor jwtAuthInterceptor) {
-        this.jwtAuthInterceptor = jwtAuthInterceptor;
-    }
+	public WebConfig(JwtAuthInterceptor jwtAuthInterceptor) {
+		this.jwtAuthInterceptor = jwtAuthInterceptor;
+	}
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        // ✅ Only exclude strictly public endpoints (Auth, OTP)
-        // All other logic (Public GET vs Private PUT) moves to the Interceptor
-        registry.addInterceptor(jwtAuthInterceptor)
-                .addPathPatterns("/api/**")
-                .excludePathPatterns(
-                        "/api/auth/**",
-                        "/api/otp/**",
-                        "/api/public/**"
-                );
-    }
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
 
-    @Override
-    public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
+		registry.addInterceptor(jwtAuthInterceptor)
+		.addPathPatterns("/api/**")
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/product-images/**")
-                .addResourceLocations("file:product-images/");
-    }
+				// PUBLIC ENDPOINTS (GET only)
+				.excludePathPatterns(
+						"/api/auth/reset-password", 
+						"/api/auth/check-phone",
+						"/api/auth/check-email",
+						"/api/auth/check-username",
+						"/api/auth/login",
+						"/api/auth/register",
+						"/api/otp/**", 
+						"/api/public/**",
+
+						// ⭐ allow all public product GET routes
+						"/api/products", 
+						"/api/products/",
+						"/api/products/[0-9]*",
+						"/api/products/*", // Only GET because GET mapped
+						"/api/products/search/**",
+
+						// Category browsing
+						"/api/categories/**",
+						"/api/products/*/images",
+						"/api/products/*/images/**"
+);
+
+		// NOTE:
+		// /api/products/manage/** ---> NOT EXCLUDED → Protected
+	}
+
+	// -------------------------------------------------------------------
+	// ⭐ CORS FIX (FRONTEND localhost:3000 ke liye full access allowed)
+	// -------------------------------------------------------------------
+	@Override
+	public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
+		registry.addMapping("/**").allowedOrigins("http://localhost:3000")
+				.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH").allowedHeaders("*")
+				.allowCredentials(true);
+	}
+
+	// -------------------------------------------------------------------
+	// ⭐ IMAGE SERVING → Automatically serve /product-images/** folder
+	// -------------------------------------------------------------------
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+
+		registry.addResourceHandler("/product-images/**").addResourceLocations("file:product-images/");
+	}
 }

@@ -13,72 +13,68 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class JwtAuthInterceptor implements HandlerInterceptor {
 
-    private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+	private final JwtUtil jwtUtil;
+	private final UserRepository userRepository;
 
-    public JwtAuthInterceptor(JwtUtil jwtUtil, UserRepository userRepository) {
-        this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
-    }
+	public JwtAuthInterceptor(JwtUtil jwtUtil, UserRepository userRepository) {
+		this.jwtUtil = jwtUtil;
+		this.userRepository = userRepository;
+	}
 
-    @Override
-    public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) throws Exception {
+	@Override
+	public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) throws Exception {
 
-        // 1. Allow Options (CORS Pre-flight)
-        if (req.getMethod().equalsIgnoreCase("OPTIONS")) {
-            return true;
-        }
+		// ========================================================================
+		// [FIX FOR FRONTEND CONNECTION]
+		// React sends an "OPTIONS" request (Pre-flight) to check security.
+		// It does NOT contain the Token. We must let it pass, or the browser blocks
+		// everything.
+		// ========================================================================
+		if (req.getMethod().equalsIgnoreCase("OPTIONS")) {
+			return true;
+		}
+		// ========================================================================
 
-        String path = req.getRequestURI();
-        String method = req.getMethod();
+		String path = req.getRequestURI();
 
-        // 2. Public Auth Endpoints (Redundant if WebConfig handles it, but good safety)
-        if (path.startsWith("/api/auth") || path.startsWith("/api/otp")) {
-            return true;
-        }
+		// Public APIs (Allow login/register without token)
+		// ALLOW only login/register/check APIs
+		if (path.equals("/api/auth/login") || path.equals("/api/auth/register")
+				|| path.equals("/api/auth/reset-password") || path.equals("/api/auth/check-username")
+				|| path.equals("/api/auth/check-email") || path.equals("/api/auth/check-phone")
+				|| path.startsWith("/api/otp/") || path.startsWith("/api/public/")
+				|| path.startsWith("/api/products/search")) {
+			return true;
+		}
 
-        // 3. ✅ SMART CHECK: Allow Public BROWSING (GET only)
-        // If user is just viewing products/categories, let them pass without token.
-        // But if they try to CREATE/UPDATE/DELETE, they fall through to the token check.
-        if (method.equalsIgnoreCase("GET")) {
-            if (path.startsWith("/api/products") || 
-                path.startsWith("/api/categories") || 
-                path.startsWith("/api/reviews") || 
-                path.startsWith("/api/inventory")) {
-                return true;
-            }
-        }
+		String header = req.getHeader("Authorization");
 
-        // 4. Token Validation (For PUT, POST, DELETE, or Protected GETs)
-        String header = req.getHeader("Authorization");
+		if (header == null || !header.startsWith("Bearer ")) {
+			res.setStatus(401);
+			res.getWriter().write("Missing Authorization!");
+			return false;
+		}
 
-        if (header == null || !header.startsWith("Bearer ")) {
-            res.setStatus(401);
-            res.getWriter().write("Missing or Invalid Authorization Header");
-            return false;
-        }
+		String token = header.substring(7);
 
-        String token = header.substring(7);
+		if (!jwtUtil.validate(token)) {
+			res.setStatus(401);
+			res.getWriter().write("Invalid or expired token!");
+			return false;
+		}
 
-        if (!jwtUtil.validate(token)) {
-            res.setStatus(401);
-            res.getWriter().write("Invalid or Expired Token");
-            return false;
-        }
+		Long userId = jwtUtil.getUserId(token);
+		User user = userRepository.findById(userId).orElse(null);
 
-        Long userId = jwtUtil.getUserId(token);
-        User user = userRepository.findById(userId).orElse(null);
-
-        if (user == null) {
-            res.setStatus(401);
-            res.getWriter().write("User does not exist");
-            return false;
-        }
-
-        // 5. Success: Attach User to Request
-        req.setAttribute("currentUser", user);
-        req.setAttribute("currentUserId", user.getId());
-
-        return true;
-    }
+		if (user == null) {
+			res.setStatus(401);
+			res.getWriter().write("User does not exist");
+			return false;
+		}
+		if(user != null){
+		    req.setAttribute("currentUser", user);
+		    req.setAttribute("currentUserId", user.getId());
+		}
+		return true;
+	}
 }
