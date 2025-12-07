@@ -13,6 +13,7 @@ import com.ecommerce.service.InventoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -143,7 +144,7 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
 	@Override
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public InventoryResponse releaseReserved(Long productId, int quantity) {
 		if (quantity <= 0) throw new BadRequestException("Quantity must be > 0");
 		ensureInventoryExists(productId);

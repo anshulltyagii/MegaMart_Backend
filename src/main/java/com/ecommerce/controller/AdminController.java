@@ -142,7 +142,4 @@ public class AdminController {
 				.ok(adminLogsRepository.findRecent(limit).stream().map(DtoMapper::adminLogToResponse).toList());
 	}
 
-
-
-
 }

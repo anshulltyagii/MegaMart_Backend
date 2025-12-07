@@ -18,228 +18,217 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
-    private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
-    
-    private static final boolean SIMULATION_ENABLED = false; 
-    private static final double SUCCESS_RATE = 0.5;
-    
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final DateTimeFormatter LOG_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+	private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
-    private final PaymentRepository paymentRepo;
-    private final OrderRepository orderRepo;
-    private final InventoryService inventoryService;
+	// Toggle this to TRUE to test failures, or FALSE for happy path
+	private static final boolean SIMULATION_ENABLED = false;
+	private static final double SUCCESS_RATE = 0.5;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepo, 
-                             OrderRepository orderRepo,
-                             InventoryService inventoryService) {
-        this.paymentRepo = paymentRepo;
-        this.orderRepo = orderRepo;
-        this.inventoryService = inventoryService;
-        
-        log.info("════════════════════════════════════════════════════════════");
-        log.info("PaymentService Initialized");
-        log.info("Simulation Mode: {}", SIMULATION_ENABLED ? "ENABLED" : "DISABLED");
-        log.info("════════════════════════════════════════════════════════════");
-    }
-    
-    @Override
-    @Transactional
-    public Payment processPayment(PaymentRequest request) {
-        String correlationId = generateCorrelationId();
-        LocalDateTime startTime = LocalDateTime.now();
-        String finalStatus = "UNKNOWN";
-        
-        logPaymentStart(correlationId, request, startTime);
-        
-        try {
-            // ─────────────────────────────────────────────────────────────────
-            // STEP 1: VALIDATION
-            // ─────────────────────────────────────────────────────────────────
-            log.info("[{}] STEP 1: Validating request...", correlationId);
-            validateRequest(request, correlationId);
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-            log.info("[{}] STEP 2: Validating order...", correlationId);
-            Order order = validateAndGetOrder(request.getOrderId(), correlationId);
+	private final PaymentRepository paymentRepo;
+	private final OrderRepository orderRepo;
+	private final InventoryService inventoryService;
 
-            log.info("[{}] STEP 3: Validating amount...", correlationId);
-            validateAmount(request.getAmount(), order.getTotalAmount(), correlationId);
+	public PaymentServiceImpl(PaymentRepository paymentRepo, OrderRepository orderRepo,
+			InventoryService inventoryService) {
+		this.paymentRepo = paymentRepo;
+		this.orderRepo = orderRepo;
+		this.inventoryService = inventoryService;
 
-            // ─────────────────────────────────────────────────────────────────
-            // STEP 4: CREATE RECORD
-            // ─────────────────────────────────────────────────────────────────
-            log.info("[{}] STEP 4: Creating payment record...", correlationId);
-            Payment payment = createPaymentRecord(request, correlationId);
+		log.info("════════════════════════════════════════════════════════════");
+		log.info("PaymentService Initialized - WITH STOCK RELEASE FIX");
+		log.info("Payment Failure -> Stock Auto-Released");
+		log.info("════════════════════════════════════════════════════════════");
+	}
 
-            // ─────────────────────────────────────────────────────────────────
-            // STEP 5: PROCESS (SIMULATION)
-            // ─────────────────────────────────────────────────────────────────
-            log.info("[{}] STEP 5: Processing payment...", correlationId);
-            boolean success = processPaymentGateway(correlationId);
+	@Override
+	@Transactional
+	public Payment processPayment(PaymentRequest request) {
+		String correlationId = generateCorrelationId();
+		LocalDateTime startTime = LocalDateTime.now();
+		String finalStatus = "UNKNOWN";
 
-            if (success) {
-                // ─────────────────────────────────────────────────────────────
-                // SUCCESS PATH
-                // ─────────────────────────────────────────────────────────────
-                finalStatus = "SUCCESS";
-                
-                log.info("[{}] ══════════════════════════════════════════════", correlationId);
-                log.info("[{}] TRANSACTION SUCCESSFUL", correlationId);
+		logPaymentStart(correlationId, request, startTime);
 
-                // ✅ COD SPECIFIC LOGIC
-                if ("COD".equalsIgnoreCase(request.getMethod())) {
-                    log.info("[{}] Method is COD -> Order: CONFIRMED, Payment: PENDING", correlationId);
-                    
-                    // Update Order Table -> Keeps business logic correct (Pending Payment)
-                    orderRepo.updatePaymentStatus(order.getId(), "PENDING", "CONFIRMED");
-                    
-                    // ✅ FIX: Mark Payment Record as SUCCESS to prevent DB Crash
-                    // (The "Transaction" was successfully recorded, even if money isn't collected yet)
-                    payment.setStatus("SUCCESS"); 
-                } else {
-                    // ✅ ONLINE PAYMENT LOGIC
-                    log.info("[{}] Method is ONLINE -> Order: CONFIRMED, Payment: PAID", correlationId);
-                    
-                    // Update Order Table
-                    orderRepo.updatePaymentStatus(order.getId(), "PAID", "CONFIRMED");
-                    
-                    // Update Payment Record Status
-                    payment.setStatus("SUCCESS");
-                }
+		try {
+			// 1. VALIDATION
+			validateRequest(request, correlationId);
+			Order order = validateAndGetOrder(request.getOrderId(), correlationId);
+			validateAmount(request.getAmount(), order.getTotalAmount(), correlationId);
 
-                // Consume inventory
-                log.info("[{}] STEP 7: Consuming reserved inventory...", correlationId);
-                consumeInventory(order.getId(), correlationId);
+			// 2. CREATE PAYMENT RECORD
+			Payment payment = createPaymentRecord(request, correlationId);
 
-            } else {
-                // ─────────────────────────────────────────────────────────────
-                // FAILURE PATH
-                // ─────────────────────────────────────────────────────────────
-                finalStatus = "FAILED";
-                payment.setStatus("FAILED");
-                
-                log.warn("[{}] TRANSACTION FAILED", correlationId);
-                
-                // Keep order as PLACED but mark payment failed
-                orderRepo.updatePaymentStatus(order.getId(), "FAILED", "PLACED");
-            }
+			// 3. PROCESS GATEWAY (SIMULATION)
+			boolean success = processPaymentGateway(correlationId);
 
-            // ─────────────────────────────────────────────────────────────────
-            // STEP 8: SAVE
-            // ─────────────────────────────────────────────────────────────────
-            log.info("[{}] STEP 8: Saving payment record...", correlationId);
-            Payment savedPayment = paymentRepo.save(payment);
-            
-            return savedPayment;
+			if (success) {
+				// ✅ SUCCESS PATH
+				finalStatus = "SUCCESS";
 
-        } catch (Exception e) {
-            finalStatus = "ERROR";
-            log.error("[{}] ✗ UNEXPECTED ERROR: {}", correlationId, e.getMessage());
-            throw new BadRequestException("Payment processing failed: " + e.getMessage());
-        } finally {
-            logPaymentEnd(correlationId, finalStatus, startTime);
-        }
-    }
+				log.info("[{}] TRANSACTION SUCCESSFUL", correlationId);
 
-    // ════════════════════════════════════════════════════════════════════════
-    // VALIDATION & HELPERS
-    // ════════════════════════════════════════════════════════════════════════
+				// Update Order Logic
+				if ("COD".equalsIgnoreCase(request.getMethod())) {
+					orderRepo.updatePaymentStatus(order.getId(), "PENDING", "CONFIRMED");
+					payment.setStatus("SUCCESS");
+				} else {
+					orderRepo.updatePaymentStatus(order.getId(), "PAID", "CONFIRMED");
+					payment.setStatus("SUCCESS");
+				}
 
-    private void validateRequest(PaymentRequest request, String correlationId) {
-        if (request == null || request.getOrderId() == null || request.getAmount() == null) {
-            throw new BadRequestException("Payment request cannot be null");
-        }
-        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("Payment amount must be greater than zero");
-        }
-        if (request.getMethod() == null || request.getMethod().trim().isEmpty()) {
-            throw new BadRequestException("Payment method is required");
-        }
-    }
+				// PERMANENTLY DEDUCT STOCK (Consume Reservation)
+				log.info("[{}] Consuming reserved inventory...", correlationId);
+				consumeInventory(order.getId(), correlationId);
 
-    private Order validateAndGetOrder(Long orderId, String correlationId) {
-        Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+			} else {
+				// ❌ FAILURE PATH
+				finalStatus = "FAILED";
+				payment.setStatus("FAILED");
 
-        if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
-            throw new BadRequestException("Order is already paid");
-        }
-        if ("CANCELLED".equalsIgnoreCase(order.getStatus())) {
-            throw new BadRequestException("Cannot pay for a cancelled order");
-        }
-        if ("SHIPPED".equalsIgnoreCase(order.getStatus()) || "DELIVERED".equalsIgnoreCase(order.getStatus())) {
-            throw new BadRequestException("Order is already processed");
-        }
-        return order;
-    }
+				log.warn("[{}] TRANSACTION FAILED - RELEASING STOCK", correlationId);
 
-    private void validateAmount(BigDecimal reqAmount, BigDecimal orderAmount, String correlationId) {
-        if (reqAmount.compareTo(orderAmount) != 0) {
-            throw new BadRequestException("Amount mismatch! Expected: " + orderAmount + ", Got: " + reqAmount);
-        }
-    }
+				// Mark payment failed in DB
+				orderRepo.updatePaymentStatus(order.getId(), "FAILED", "PLACED");
 
-    private Payment createPaymentRecord(PaymentRequest request, String correlationId) {
-        Payment payment = new Payment();
-        payment.setOrderId(request.getOrderId());
-        payment.setAmount(request.getAmount());
-        payment.setMethod(request.getMethod().toUpperCase());
-        
-        // Generate TXN ID based on method
-        String prefix = "COD".equalsIgnoreCase(request.getMethod()) ? "COD-" : "TXN-";
-        String ref = request.getTxnReference() != null ? request.getTxnReference() : prefix + System.currentTimeMillis();
-        
-        payment.setTxnReference(ref);
-        payment.setCreatedAt(LocalDateTime.now());
-        return payment;
-    }
+				// 🔥 CRITICAL FIX: RELEASE RESERVED STOCK
+				releaseStockForFailedPayment(order.getId(), correlationId);
+			}
 
-    private boolean processPaymentGateway(String correlationId) {
-        // If simulation enabled, use random chance. If disabled, always success.
-        return !SIMULATION_ENABLED || SECURE_RANDOM.nextDouble() < SUCCESS_RATE;
-    }
+			// Save Payment Record
+			return paymentRepo.save(payment);
 
-    private void consumeInventory(Long orderId, String correlationId) {
-        try {
-            List<OrderItemResponse> items = orderRepo.findItemsByOrderId(orderId);
-            for (OrderItemResponse item : items) {
-                try {
-                    inventoryService.consumeReservedOnOrder(item.getProductId(), item.getQuantity());
-                    log.info("[{}]   ✓ Consumed product {}", correlationId, item.getProductId());
-                } catch (Exception e) {
-                    log.warn("[{}]   ⚠ Failed to consume product {}: {}", correlationId, item.getProductId(), e.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("[{}] Inventory consumption error: {}", correlationId, e.getMessage());
-        }
-    }
+		} catch (Exception e) {
+			finalStatus = "ERROR";
+			log.error("[{}] ✖ UNEXPECTED ERROR: {}", correlationId, e.getMessage());
 
-    private String generateCorrelationId() {
-        return "PAY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
+			// 🔥 CRITICAL FIX: RELEASE RESERVED STOCK ON EXCEPTION TOO
+			releaseStockForFailedPayment(request.getOrderId(), correlationId);
 
-    private void logPaymentStart(String id, PaymentRequest req, LocalDateTime start) {
-        log.info("┌────────────────────────────────────────────────────────────┐");
-        log.info("│ PAYMENT PROCESSING STARTED                                 │");
-        log.info("│ ID: {} | Method: {} | Order: {} │", id, req.getMethod(), req.getOrderId());
-        log.info("└────────────────────────────────────────────────────────────┘");
-    }
+			throw new BadRequestException("Payment processing failed: " + e.getMessage());
+		} finally {
+			logPaymentEnd(correlationId, finalStatus, startTime);
+		}
+	}
 
-    private void logPaymentEnd(String id, String status, LocalDateTime start) {
-        log.info("Payment Process Ended [{}] Status: {}", id, status);
-    }
+	// ════════════════════════════════════════════════════════════════════════
+	// 🔥 THE FIX: RELEASE STOCK HELPER
+	// ════════════════════════════════════════════════════════════════════════
+	private void releaseStockForFailedPayment(Long orderId, String correlationId) {
+		if (orderId == null)
+			return;
 
-    @Override
-    public Payment getPaymentByOrderId(Long orderId) {
-        return paymentRepo.findByOrderId(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-    }
+		try {
+			List<OrderItemResponse> items = orderRepo.findItemsByOrderId(orderId);
+			for (OrderItemResponse item : items) {
+				try {
+					// Release the reservation so stock becomes available again
+					inventoryService.releaseReserved(item.getProductId(), item.getQuantity());
+					log.info("[{}]   ⟲ Released reservation for Product {}", correlationId, item.getProductId());
+				} catch (Exception e) {
+					log.error("[{}]   Failed to release stock for Product {}", correlationId, item.getProductId());
+				}
+			}
+		} catch (Exception e) {
+			log.error("[{}] Critical error releasing stock: {}", correlationId, e.getMessage());
+		}
+	}
+
+	// ════════════════════════════════════════════════════════════════════════
+	// OTHER HELPERS
+	// ════════════════════════════════════════════════════════════════════════
+
+	private void validateRequest(PaymentRequest request, String correlationId) {
+		if (request == null || request.getOrderId() == null || request.getAmount() == null) {
+			throw new BadRequestException("Payment request cannot be null");
+		}
+		if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+			throw new BadRequestException("Payment amount must be greater than zero");
+		}
+		if (request.getMethod() == null || request.getMethod().trim().isEmpty()) {
+			throw new BadRequestException("Payment method is required");
+		}
+	}
+
+	private Order validateAndGetOrder(Long orderId, String correlationId) {
+		Order order = orderRepo.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+		if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+			throw new BadRequestException("Order is already paid");
+		}
+		if ("CANCELLED".equalsIgnoreCase(order.getStatus())) {
+			throw new BadRequestException("Cannot pay for a cancelled order");
+		}
+		return order;
+	}
+
+	private void validateAmount(BigDecimal reqAmount, BigDecimal orderAmount, String correlationId) {
+		if (reqAmount.compareTo(orderAmount) != 0) {
+			throw new BadRequestException("Amount mismatch! Expected: " + orderAmount + ", Got: " + reqAmount);
+		}
+	}
+
+	private Payment createPaymentRecord(PaymentRequest request, String correlationId) {
+		Payment payment = new Payment();
+		payment.setOrderId(request.getOrderId());
+		payment.setAmount(request.getAmount());
+		payment.setMethod(request.getMethod().toUpperCase());
+
+		String prefix = "COD".equalsIgnoreCase(request.getMethod()) ? "COD-" : "TXN-";
+		String ref = request.getTxnReference() != null ? request.getTxnReference()
+				: prefix + System.currentTimeMillis();
+
+		payment.setTxnReference(ref);
+		payment.setCreatedAt(LocalDateTime.now());
+		return payment;
+	}
+
+	private boolean processPaymentGateway(String correlationId) {
+		// Simple logic: returns true unless simulation is enabled and random < rate
+		return !SIMULATION_ENABLED || SECURE_RANDOM.nextDouble() < SUCCESS_RATE;
+	}
+
+	private void consumeInventory(Long orderId, String correlationId) {
+		try {
+			List<OrderItemResponse> items = orderRepo.findItemsByOrderId(orderId);
+			for (OrderItemResponse item : items) {
+				try {
+					inventoryService.consumeReservedOnOrder(item.getProductId(), item.getQuantity());
+					log.info("[{}]   ✓ Consumed product {}", correlationId, item.getProductId());
+				} catch (Exception e) {
+					log.warn("[{}]   ⚠ Failed to consume product {}: {}", correlationId, item.getProductId(),
+							e.getMessage());
+				}
+			}
+		} catch (Exception e) {
+			log.warn("[{}] Inventory consumption error: {}", correlationId, e.getMessage());
+		}
+	}
+
+	private String generateCorrelationId() {
+		return "PAY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+	}
+
+	private void logPaymentStart(String id, PaymentRequest req, LocalDateTime start) {
+		log.info("┌──────────────────────────────────────────────────────────┐");
+		log.info("│ PAYMENT PROCESSING STARTED                                 │");
+		log.info("│ ID: {} | Method: {} | Order: {} │", id, req.getMethod(), req.getOrderId());
+		log.info("└──────────────────────────────────────────────────────────┘");
+	}
+
+	private void logPaymentEnd(String id, String status, LocalDateTime start) {
+		log.info("Payment Process Ended [{}] Status: {}", id, status);
+	}
+
+	@Override
+	public Payment getPaymentByOrderId(Long orderId) {
+		return paymentRepo.findByOrderId(orderId).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+	}
 }

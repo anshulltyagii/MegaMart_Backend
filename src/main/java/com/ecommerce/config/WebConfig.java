@@ -20,7 +20,7 @@ public class WebConfig implements WebMvcConfigurer {
 		registry.addInterceptor(jwtAuthInterceptor)
 		.addPathPatterns("/api/**")
 
-				// PUBLIC ENDPOINTS (GET only)
+				// PUBLIC ENDPOINTS 
 				.excludePathPatterns(
 						"/api/auth/reset-password", 
 						"/api/auth/check-phone",
@@ -31,7 +31,7 @@ public class WebConfig implements WebMvcConfigurer {
 						"/api/otp/**", 
 						"/api/public/**",
 
-						// ⭐ allow all public product GET routes
+						//  allow all public product GET routes
 						"/api/products", 
 						"/api/products/",
 						"/api/products/[0-9]*",
@@ -43,14 +43,9 @@ public class WebConfig implements WebMvcConfigurer {
 						"/api/products/*/images",
 						"/api/products/*/images/**"
 );
+		}
 
-		// NOTE:
-		// /api/products/manage/** ---> NOT EXCLUDED → Protected
-	}
 
-	// -------------------------------------------------------------------
-	// ⭐ CORS FIX (FRONTEND localhost:3000 ke liye full access allowed)
-	// -------------------------------------------------------------------
 	@Override
 	public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
 		registry.addMapping("/**").allowedOrigins("http://localhost:3000")
@@ -58,9 +53,6 @@ public class WebConfig implements WebMvcConfigurer {
 				.allowCredentials(true);
 	}
 
-	// -------------------------------------------------------------------
-	// ⭐ IMAGE SERVING → Automatically serve /product-images/** folder
-	// -------------------------------------------------------------------
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
 

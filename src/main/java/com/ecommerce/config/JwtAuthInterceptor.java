@@ -24,21 +24,13 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
 	@Override
 	public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) throws Exception {
 
-		// ========================================================================
-		// [FIX FOR FRONTEND CONNECTION]
-		// React sends an "OPTIONS" request (Pre-flight) to check security.
-		// It does NOT contain the Token. We must let it pass, or the browser blocks
-		// everything.
-		// ========================================================================
 		if (req.getMethod().equalsIgnoreCase("OPTIONS")) {
 			return true;
 		}
-		// ========================================================================
 
 		String path = req.getRequestURI();
 
 		// Public APIs (Allow login/register without token)
-		// ALLOW only login/register/check APIs
 		if (path.equals("/api/auth/login") || path.equals("/api/auth/register")
 				|| path.equals("/api/auth/reset-password") || path.equals("/api/auth/check-username")
 				|| path.equals("/api/auth/check-email") || path.equals("/api/auth/check-phone")
@@ -71,9 +63,9 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
 			res.getWriter().write("User does not exist");
 			return false;
 		}
-		if(user != null){
-		    req.setAttribute("currentUser", user);
-		    req.setAttribute("currentUserId", user.getId());
+		if (user != null) {
+			req.setAttribute("currentUser", user);
+			req.setAttribute("currentUserId", user.getId());
 		}
 		return true;
 	}

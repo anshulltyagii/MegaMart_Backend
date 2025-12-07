@@ -1,3 +1,4 @@
+
 package com.ecommerce.service.impl;
 
 import com.ecommerce.dto.CartResponse;
@@ -52,9 +53,8 @@ public class OrderServiceImpl implements OrderService {
 		this.inventoryService = inventoryService;
 
 		log.info("════════════════════════════════════════════════════════════");
-		log.info("OrderService Initialized - PAYMENT-COMPATIBLE VERSION");
-		log.info("Global Coupons: Proportional discount per order");
-		log.info("Shop Coupons: Discount only that shop's order");
+		log.info("OrderService Initialized - FINAL PRODUCTION VERSION");
+		log.info("Fix applied: Cancellation logic based on Order Status (CONFIRMED vs PLACED)");
 		log.info("════════════════════════════════════════════════════════════");
 	}
 
@@ -148,16 +148,9 @@ public class OrderServiceImpl implements OrderService {
 
 				if (coupon != null) {
 					if (coupon.getShopId() == null) {
-						// ══════════════════════════════════════════════════════
-						// GLOBAL COUPON: Apply proportional discount
-						// ══════════════════════════════════════════════════════
-
-						// Calculate this shop's proportion of total cart
+						// Global Coupon
 						BigDecimal proportion = shopTotal.divide(totalCartValue, 10, RoundingMode.HALF_UP);
-
-						// Apply proportional discount
 						thisOrderDiscount = totalCouponDiscount.multiply(proportion).setScale(2, RoundingMode.HALF_UP);
-
 						finalOrderAmount = shopTotal.subtract(thisOrderDiscount);
 						platformSubsidy = platformSubsidy.add(thisOrderDiscount);
 						discountType = "GLOBAL_PROPORTIONAL";
@@ -166,10 +159,7 @@ public class OrderServiceImpl implements OrderService {
 								finalOrderAmount, shopTotal, thisOrderDiscount);
 
 					} else if (coupon.getShopId().equals(currentShopId)) {
-						// ══════════════════════════════════════════════════════
-						// SHOP-SPECIFIC COUPON: Apply full discount to this shop
-						// ══════════════════════════════════════════════════════
-
+						// Shop Specific Coupon
 						thisOrderDiscount = calculateDiscountAmount(shopTotal, coupon);
 						finalOrderAmount = shopTotal.subtract(thisOrderDiscount);
 						shopDiscount = shopDiscount.add(thisOrderDiscount);
@@ -179,24 +169,18 @@ public class OrderServiceImpl implements OrderService {
 								finalOrderAmount, shopTotal, thisOrderDiscount);
 
 					} else {
-						// ══════════════════════════════════════════════════════
-						// SHOP-SPECIFIC COUPON: Different shop, no discount
-						// ══════════════════════════════════════════════════════
-
+						// Different Shop
 						finalOrderAmount = shopTotal;
 						discountType = "NONE_DIFFERENT_SHOP";
-
 						log.info("  → Shop {} order: ₹{} (full price - coupon for Shop {})", currentShopId,
 								finalOrderAmount, coupon.getShopId());
 					}
 				}
 
-				// Safety check
 				if (finalOrderAmount.compareTo(BigDecimal.ZERO) < 0) {
 					finalOrderAmount = BigDecimal.ZERO;
 				}
 
-				// Create order
 				Order order = new Order();
 				order.setUserId(userId);
 				order.setShopId(currentShopId);
@@ -212,50 +196,15 @@ public class OrderServiceImpl implements OrderService {
 				log.info("  ✓ Order {} created - Amount: ₹{} ({})", savedOrder.getOrderNumber(), finalOrderAmount,
 						discountType);
 
-				// Save order items
+				// 🔥 This is the method call that was failing in your IDE
 				List<OrderItem> orderItems = createOrderItems(savedOrder.getId(), shopItems);
 				orderRepository.saveOrderItems(orderItems);
 			}
 
-			// ─────────────────────────────────────────────────────────────────
-			// FINANCIAL SUMMARY
-			// ─────────────────────────────────────────────────────────────────
-
+			// Financial Summary
 			if (coupon != null) {
-				// Record coupon usage
 				Long firstOrderId = createdOrders.get(0).getId();
 				couponRepository.recordUsage(userId, coupon.getId(), firstOrderId);
-
-				// Calculate totals
-				BigDecimal ordersTotal = createdOrders.stream().map(Order::getTotalAmount).reduce(BigDecimal.ZERO,
-						BigDecimal::add);
-
-				BigDecimal customerPayable = ordersTotal;
-
-				if (coupon.getShopId() == null) {
-					// Global coupon summary
-					log.info("═══════════════════════════════════════════════════════════");
-					log.info("GLOBAL COUPON APPLIED");
-					log.info("  Coupon: {}", coupon.getCode());
-					log.info("  Original Cart Total: ₹{}", totalCartValue);
-					log.info("  Total Discount: -₹{}", totalCouponDiscount);
-					log.info("  Orders Total (DB): ₹{}", ordersTotal);
-					log.info("  Customer Pays: ₹{}", customerPayable);
-					log.info("  Platform Subsidy: ₹{} (proportionally distributed)", platformSubsidy);
-					log.info("═══════════════════════════════════════════════════════════");
-
-				} else {
-					// Shop-specific coupon summary
-					log.info("═══════════════════════════════════════════════════════════");
-					log.info("SHOP-SPECIFIC COUPON APPLIED");
-					log.info("  Coupon: {} (Shop {})", coupon.getCode(), coupon.getShopId());
-					log.info("  Original Cart Total: ₹{}", totalCartValue);
-					log.info("  Orders Total (DB): ₹{}", ordersTotal);
-					log.info("  Shop {} Discount: -₹{}", coupon.getShopId(), shopDiscount);
-					log.info("  Customer Pays: ₹{}", customerPayable);
-					log.info("  Platform Subsidy: ₹0");
-					log.info("═══════════════════════════════════════════════════════════");
-				}
 			}
 
 		} catch (Exception e) {
@@ -274,9 +223,102 @@ public class OrderServiceImpl implements OrderService {
 		return createdOrders;
 	}
 
+	// ──────────────────────────────────────────────────────────────────────────────────
+	// 🔥 FIXED CANCEL ORDER (DB SAFE)
+	// Uses "FAILED" instead of "REFUNDED" to avoid Data Truncation/Enum errors
+	// ──────────────────────────────────────────────────────────────────────────────────
+	@Override
+	@Transactional
+	public void cancelOrder(Long orderId) {
+		validateOrderId(orderId);
+		Order o = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+		// 1. Validation
+		if (List.of("SHIPPED", "DELIVERED", "RETURNED", "CANCELLED").contains(o.getStatus())) {
+			throw new BadRequestException("Cannot cancel order in state: " + o.getStatus());
+		}
+
+		// 2. Update Order Status
+		orderRepository.updateOrderStatus(orderId, "CANCELLED");
+
+		// 3. Inventory Logic (Status Based)
+		List<OrderItemResponse> items = orderRepository.findItemsByOrderId(orderId);
+		boolean stockWasConsumed = "CONFIRMED".equalsIgnoreCase(o.getStatus());
+
+		for (OrderItemResponse item : items) {
+			if (stockWasConsumed) {
+				inventoryService.addStock(item.getProductId(), item.getQuantity());
+			} else {
+				inventoryService.releaseReserved(item.getProductId(), item.getQuantity());
+			}
+		}
+
+		// 4. Update Payment Status (DB SAFE FIX)
+		orderRepository.updatePaymentStatus(orderId, "FAILED", "CANCELLED");
+
+		log.info("Order {} cancelled. Status: CANCELLED, Payment: FAILED, Restocked: {}", orderId, stockWasConsumed);
+	}
+
+	@Override
+	public List<OrderResponse> getUserOrders(Long userId) {
+		validateUserId(userId);
+		List<Order> orders = orderRepository.findByUserId(userId);
+		List<OrderResponse> res = new ArrayList<>();
+		for (Order o : orders) {
+			res.add(mapToResponse(o, orderRepository.findItemsByOrderId(o.getId())));
+		}
+		return res;
+	}
+
+	@Override
+	public OrderResponse getOrderDetails(Long orderId) {
+		validateOrderId(orderId);
+		Order o = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+		return mapToResponse(o, orderRepository.findItemsByOrderId(orderId));
+	}
+
+	@Override
+	public List<OrderResponse> getAllOrders() {
+		return orderRepository.findAll().stream().map(o -> {
+			List<OrderItemResponse> items = orderRepository.findItemsByOrderId(o.getId()).stream()
+					.map(i -> new OrderItemResponse(i.getProductId(), i.getProductName(), i.getQuantity(),
+							i.getUnitPrice(), i.getTotalPrice(), i.getProductImage()))
+					.toList();
+			return mapToResponse(o, items);
+
+		}).toList();
+	}
+
+	@Override
+	@Transactional
+	public OrderResponse updateOrderStatus(Long orderId, String newStatus) {
+		validateOrderId(orderId);
+		validateStatus(newStatus);
+
+		Order o = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+		if ("DELIVERED".equals(o.getStatus()) || "CANCELLED".equals(o.getStatus())) {
+			throw new BadRequestException("Cannot change status of a " + o.getStatus() + " order");
+		}
+
+		orderRepository.updateOrderStatus(orderId, newStatus);
+		o.setStatus(newStatus);
+		return mapToResponse(o, null);
+	}
+
 	// ════════════════════════════════════════════════════════════════════════
-	// HELPER METHODS
+	// HELPER METHODS (INCLUDING createOrderItems)
 	// ════════════════════════════════════════════════════════════════════════
+
+	// 🔥 This is the method that was causing your compilation error
+	private List<OrderItem> createOrderItems(Long orderId, List<CartItem> items) {
+		List<OrderItem> list = new ArrayList<>();
+		for (CartItem ci : items) {
+			BigDecimal total = ci.getPriceAtAdd().multiply(new BigDecimal(ci.getQuantity()));
+			list.add(new OrderItem(orderId, ci.getProductId(), ci.getQuantity(), ci.getPriceAtAdd(), total));
+		}
+		return list;
+	}
 
 	private void checkInventoryAvailability(List<CartItem> items) {
 		List<String> errors = new ArrayList<>();
@@ -336,93 +378,6 @@ public class OrderServiceImpl implements OrderService {
 		return "ORD-" + System.currentTimeMillis() + "-" + shopId;
 	}
 
-	private List<OrderItem> createOrderItems(Long orderId, List<CartItem> items) {
-		List<OrderItem> list = new ArrayList<>();
-		for (CartItem ci : items) {
-			BigDecimal total = ci.getPriceAtAdd().multiply(new BigDecimal(ci.getQuantity()));
-			list.add(new OrderItem(orderId, ci.getProductId(), ci.getQuantity(), ci.getPriceAtAdd(), total));
-		}
-		return list;
-	}
-
-	// ════════════════════════════════════════════════════════════════════════
-	// STANDARD CRUD METHODS
-	// ════════════════════════════════════════════════════════════════════════
-
-	@Override
-	public List<OrderResponse> getUserOrders(Long userId) {
-		validateUserId(userId);
-		List<Order> orders = orderRepository.findByUserId(userId);
-		List<OrderResponse> res = new ArrayList<>();
-		for (Order o : orders) {
-			res.add(mapToResponse(o, orderRepository.findItemsByOrderId(o.getId())));
-		}
-		return res;
-	}
-
-	@Override
-	public OrderResponse getOrderDetails(Long orderId) {
-		validateOrderId(orderId);
-		Order o = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-		return mapToResponse(o, orderRepository.findItemsByOrderId(orderId));
-	}
-
-	@Override
-	@Transactional
-	public void cancelOrder(Long orderId) {
-		validateOrderId(orderId);
-		Order o = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-
-		if (List.of("SHIPPED", "DELIVERED", "RETURNED", "CANCELLED").contains(o.getStatus())) {
-			throw new BadRequestException("Cannot cancel order in state: " + o.getStatus());
-		}
-
-		orderRepository.updateOrderStatus(orderId, "CANCELLED");
-
-		List<OrderItemResponse> items = orderRepository.findItemsByOrderId(orderId);
-		for (OrderItemResponse item : items) {
-			inventoryService.releaseReserved(item.getProductId(), item.getQuantity());
-		}
-	}
-
-	@Override
-	public List<OrderResponse> getAllOrders() {
-		return orderRepository.findAll().stream().map(o -> {
-			List<OrderItemResponse> items=orderRepository
-					.findItemsByOrderId(o.getId())
-					.stream()
-					.map(i-> new OrderItemResponse(
-							i.getProductId(),
-							i.getProductName(),
-							i.getQuantity(),
-							i.getUnitPrice(),
-							i.getTotalPrice(),
-							i.getProductImage()))
-					.toList();
-			return mapToResponse(o,items);
-					
-		})
-				.toList();
-	}
-
-	@Override
-	@Transactional
-	public OrderResponse updateOrderStatus(Long orderId, String newStatus) {
-		validateOrderId(orderId);
-		validateStatus(newStatus);
-
-		Order o = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-
-		if ("DELIVERED".equals(o.getStatus()) || "CANCELLED".equals(o.getStatus())) {
-			throw new BadRequestException("Cannot change status of a " + o.getStatus() + " order");
-		}
-
-		orderRepository.updateOrderStatus(orderId, newStatus);
-		o.setStatus(newStatus);
-		return mapToResponse(o, null);
-	}
-
-	// Validators
 	private void validateUserId(Long id) {
 		if (id == null || id <= 0)
 			throw new BadRequestException("Invalid User ID");
