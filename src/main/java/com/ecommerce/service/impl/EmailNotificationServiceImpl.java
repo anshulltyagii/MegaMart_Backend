@@ -45,9 +45,6 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 		Long id = emailRepo.save(n);
 		n.setId(id);
 
-		// ---------------------------------------------------------------------------------------
-		// MOá¸° MODE â€” Instead of sending real email, we log it
-		// ---------------------------------------------------------------------------------------
 		log.info("MOCK EMAIL â†’ USER: {}, SUBJECT: {}, MESSAGE: {}", userId, request.getSubject(),
 				request.getMessage());
 
@@ -57,7 +54,6 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 		System.out.println("Message: " + request.getMessage());
 		System.out.println("==================\n");
 
-		// mark as SENT
 		emailRepo.updateStatus(id, "SENT");
 		n.setStatus("SENT");
 

@@ -61,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
 	@Override
 	public String login(LoginRequest req) {
 
-		String input = req.getIdentifier(); // username OR email
+		String input = req.getIdentifier();
 
 		if (input == null || input.isBlank()) {
 			throw new BadRequestException("Identifier cannot be empty");

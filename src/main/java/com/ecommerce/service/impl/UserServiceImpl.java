@@ -25,23 +25,17 @@ public class UserServiceImpl implements UserService {
 
 	private final UserRepository userRepository;
 
-	// Constructor Injection
 	public UserServiceImpl(UserRepository userRepository) {
 		this.userRepository = userRepository;
 	}
 
-	// ------------------------------------------------------------
-	// CREATE USER
-	// ------------------------------------------------------------
 	@Override
 	public UserResponse createUser(UserRequest request) {
 
-		// Check duplicate username
 		if (userRepository.existsByUsername(request.getUsername())) {
 			throw new BadRequestException("Username already exists!");
 		}
 
-		// Check duplicate email
 		if (userRepository.existsByEmail(request.getEmail())) {
 			throw new BadRequestException("Email already exists!");
 		}
@@ -53,10 +47,8 @@ public class UserServiceImpl implements UserService {
 		user.setPhone(request.getPhone());
 		user.setRole(UserRole.valueOf(request.getRole().toUpperCase()));
 
-		// Account always ACTIVE when created
 		user.setAccountStatus(AccountStatus.ACTIVE);
 
-		// NOTE: In real world â†’ hash password
 		user.setPasswordHash(request.getPassword());
 
 		Long id = userRepository.save(user);
@@ -65,15 +57,11 @@ public class UserServiceImpl implements UserService {
 		return mapToResponse(user);
 	}
 
-	// ------------------------------------------------------------
-	// UPDATE USER
-	// ------------------------------------------------------------
 	@Override
 	public UserResponse updateUser(Long id, UserRequest request) {
 
 		User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-		// ---------------- USERNAME UPDATE (ONLY IF PROVIDED) ----------------
 		if (request.getUsername() != null && !request.getUsername().isBlank()) {
 
 			if (!user.getUsername().equals(request.getUsername())
@@ -84,7 +72,6 @@ public class UserServiceImpl implements UserService {
 			user.setUsername(request.getUsername());
 		}
 
-		// ---------------- EMAIL UPDATE (ONLY IF PROVIDED) ----------------
 		if (request.getEmail() != null && !request.getEmail().isBlank()) {
 
 			if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
@@ -94,20 +81,14 @@ public class UserServiceImpl implements UserService {
 			user.setEmail(request.getEmail());
 		}
 
-		// ---------------- FULL NAME UPDATE ----------------
 		if (request.getFullName() != null) {
 			user.setFullName(request.getFullName());
 		}
 
-		// ---------------- PHONE UPDATE ----------------
 		if (request.getPhone() != null) {
 			user.setPhone(request.getPhone());
 		}
 
-		// ---------------- ROLE MUST NEVER BE UPDATED ----------------
-		// Do NOT update user.setRole(request.getRole());
-
-		// ---------------- ACCOUNT STATUS UPDATE (ADMIN) ----------------
 		if (request.getAccountStatus() != null) {
 			user.setAccountStatus(AccountStatus.valueOf(request.getAccountStatus().toUpperCase()));
 		}
@@ -117,9 +98,6 @@ public class UserServiceImpl implements UserService {
 		return mapToResponse(user);
 	}
 
-	// ------------------------------------------------------------
-	// GET USER BY ID
-	// ------------------------------------------------------------
 	@Override
 	public UserResponse getUserById(Long id) {
 		User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -127,33 +105,21 @@ public class UserServiceImpl implements UserService {
 		return mapToResponse(user);
 	}
 
-	// ------------------------------------------------------------
-	// LOGIN PURPOSE: GET ACTIVE USER
-	// ------------------------------------------------------------
 	@Override
 	public Optional<User> getActiveUserByUsername(String username) {
 		return userRepository.findActiveByUsername(username);
 	}
 
-	// ------------------------------------------------------------
-	// GET ALL ACTIVE USERS
-	// ------------------------------------------------------------
 	@Override
 	public List<UserResponse> getAllActiveUsers() {
 		return userRepository.findAllActive().stream().map(this::mapToResponse).collect(Collectors.toList());
 	}
 
-	// ------------------------------------------------------------
-	// GET ALL USERS (ADMIN)
-	// ------------------------------------------------------------
 	@Override
 	public List<UserResponse> getAllUsers() {
 		return userRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
 	}
 
-	// ------------------------------------------------------------
-	// SOFT DELETE USER
-	// ------------------------------------------------------------
 	@Override
 	public boolean softDeleteUser(Long id) {
 		// Check exist
@@ -163,9 +129,6 @@ public class UserServiceImpl implements UserService {
 		return userRepository.softDelete(id);
 	}
 
-	// ------------------------------------------------------------
-	// UPDATE ACCOUNT STATUS (ADMIN)
-	// ------------------------------------------------------------
 	@Override
 	public boolean updateAccountStatus(Long id, String status) {
 
@@ -176,9 +139,6 @@ public class UserServiceImpl implements UserService {
 		return userRepository.updateAccountStatus(id, status);
 	}
 
-	// ------------------------------------------------------------
-	// PRIVATE MAPPER METHOD
-	// ------------------------------------------------------------
 	private UserResponse mapToResponse(User user) {
 
 		UserResponse resp = new UserResponse();

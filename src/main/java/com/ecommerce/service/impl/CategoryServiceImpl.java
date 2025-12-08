@@ -28,11 +28,10 @@ public class CategoryServiceImpl implements CategoryService {
 	public List<Category> listActive() {
 		return repo.findAllActive();
 	}
-	
+
 	@Override
 	public Category getById(Long id) {
-		return repo.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+		return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 	}
 
 	@Override
@@ -41,7 +40,6 @@ public class CategoryServiceImpl implements CategoryService {
 		if (!repo.existsById(id))
 			throw new ResourceNotFoundException("Category not found");
 
-// Remove children FIRST (optional)
 		List<Category> children = repo.findByParentCategoryId(id);
 		if (!children.isEmpty())
 			throw new BadRequestException("Cannot deactivate category: it has subcategories.");
@@ -57,12 +55,12 @@ public class CategoryServiceImpl implements CategoryService {
 
 		repo.updateActiveFlag(id, true);
 	}
-	
+
 	@Override
 	public void update(Category c) {
-		if(!repo.existsById(c.getId()))
+		if (!repo.existsById(c.getId()))
 			throw new ResourceNotFoundException("Category not found");
-		
+
 		repo.update(c);
 	}
 }

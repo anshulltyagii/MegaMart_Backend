@@ -61,13 +61,11 @@ public class CartServiceImpl implements CartService {
 	public CartResponse getUserCart(Long userId) {
 		log.info("Fetching cart for user: {}", userId);
 
-		// Validate user ID
 		validateUserId(userId);
 
 		Cart cart = getOrCreateCart(userId);
 		List<CartItem> items = cartRepository.findItemsByCartId(cart.getId());
 
-		// Handle null items list
 		if (items == null) {
 			items = Collections.emptyList();
 		}
@@ -76,18 +74,10 @@ public class CartServiceImpl implements CartService {
 		return buildCartResponse(cart, items);
 	}
 
-	// ════════════════════════════════════════════════════════════════════════
-	// ADD TO CART
-	// ════════════════════════════════════════════════════════════════════════
-
 	@Override
 	@Transactional
 	public CartItem addToCart(Long userId, Long productId, Integer quantity) {
 		log.info("Adding to cart - User: {}, Product: {}, Quantity: {}", userId, productId, quantity);
-
-		// ─────────────────────────────────────────────────────────────────────
-		// VALIDATION
-		// ─────────────────────────────────────────────────────────────────────
 
 		// Edge Case 1: Null user ID
 		validateUserId(userId);
@@ -122,16 +112,8 @@ public class CartServiceImpl implements CartService {
 			throw new BadRequestException("Maximum " + MAX_QUANTITY_PER_ITEM + " items allowed per product");
 		}
 
-		// ─────────────────────────────────────────────────────────────────────
-		// PRODUCT VALIDATION
-		// ─────────────────────────────────────────────────────────────────────
-
 		// Edge Case 7: Product doesn't exist or is inactive
 		BigDecimal productPrice = getProductPrice(productId);
-
-		// ─────────────────────────────────────────────────────────────────────
-		// CART OPERATIONS
-		// ─────────────────────────────────────────────────────────────────────
 
 		Cart cart = getOrCreateCart(userId);
 		Optional<CartItem> existingItemOpt = cartRepository.findCartItem(cart.getId(), productId);
@@ -166,18 +148,10 @@ public class CartServiceImpl implements CartService {
 		}
 	}
 
-	// ════════════════════════════════════════════════════════════════════════
-	// UPDATE CART ITEM QUANTITY
-	// ════════════════════════════════════════════════════════════════════════
-
 	@Override
 	@Transactional
 	public CartItem updateCartItemQuantity(Long userId, Long cartItemId, Integer quantity) {
 		log.info("Updating cart item - User: {}, ItemId: {}, NewQuantity: {}", userId, cartItemId, quantity);
-
-		// ─────────────────────────────────────────────────────────────────────
-		// VALIDATION
-		// ─────────────────────────────────────────────────────────────────────
 
 		validateUserId(userId);
 
@@ -211,10 +185,6 @@ public class CartServiceImpl implements CartService {
 			throw new BadRequestException("Maximum " + MAX_QUANTITY_PER_ITEM + " items allowed per product");
 		}
 
-		// ─────────────────────────────────────────────────────────────────────
-		// AUTHORIZATION CHECK
-		// ─────────────────────────────────────────────────────────────────────
-
 		// Edge Case 6: Cart item not found
 		CartItem item = cartRepository.findItemById(cartItemId).orElseThrow(() -> {
 			log.error("Cart item not found: {}", cartItemId);
@@ -233,10 +203,6 @@ public class CartServiceImpl implements CartService {
 			throw new UnauthorizedException("You are not authorized to modify this cart item");
 		}
 
-		// ─────────────────────────────────────────────────────────────────────
-		// UPDATE
-		// ─────────────────────────────────────────────────────────────────────
-
 		cartRepository.updateItemQuantity(cartItemId, quantity);
 		item.setQuantity(quantity);
 
@@ -244,18 +210,10 @@ public class CartServiceImpl implements CartService {
 		return item;
 	}
 
-	// ════════════════════════════════════════════════════════════════════════
-	// REMOVE FROM CART
-	// ════════════════════════════════════════════════════════════════════════
-
 	@Override
 	@Transactional
 	public void removeFromCart(Long userId, Long cartItemId) {
 		log.info("Removing from cart - User: {}, ItemId: {}", userId, cartItemId);
-
-		// ─────────────────────────────────────────────────────────────────────
-		// VALIDATION
-		// ─────────────────────────────────────────────────────────────────────
 
 		validateUserId(userId);
 
@@ -289,17 +247,9 @@ public class CartServiceImpl implements CartService {
 			throw new UnauthorizedException("You are not authorized to remove this cart item");
 		}
 
-		// ─────────────────────────────────────────────────────────────────────
-		// DELETE
-		// ─────────────────────────────────────────────────────────────────────
-
 		cartRepository.removeItem(cartItemId);
 		log.info("Cart item {} removed successfully", cartItemId);
 	}
-
-	// ════════════════════════════════════════════════════════════════════════
-	// CLEAR CART
-	// ════════════════════════════════════════════════════════════════════════
 
 	@Override
 	@Transactional
@@ -317,10 +267,6 @@ public class CartServiceImpl implements CartService {
 
 		log.info("Cleared {} items from cart for user: {}", itemCount, userId);
 	}
-
-	// ════════════════════════════════════════════════════════════════════════
-	// VALIDATE CART
-	// ════════════════════════════════════════════════════════════════════════
 
 	@Override
 	public CartResponse validateCart(Long userId) {
@@ -351,10 +297,6 @@ public class CartServiceImpl implements CartService {
 		return response;
 	}
 
-	// ════════════════════════════════════════════════════════════════════════
-	// PRIVATE HELPER METHODS
-	// ════════════════════════════════════════════════════════════════════════
-
 	private void validateUserId(Long userId) {
 		if (userId == null) {
 			log.error("User ID is null");
@@ -366,9 +308,6 @@ public class CartServiceImpl implements CartService {
 		}
 	}
 
-	/**
-	 * Get product price from database. Validates that product exists.
-	 */
 	private BigDecimal getProductPrice(Long productId) {
 		String sql = "SELECT selling_price FROM products WHERE id = ?";
 		try {
@@ -383,9 +322,6 @@ public class CartServiceImpl implements CartService {
 		}
 	}
 
-	/**
-	 * Build CartResponse from Cart and CartItems
-	 */
 	private CartResponse buildCartResponse(Cart cart, List<CartItem> items) {
 		CartResponse response = new CartResponse();
 		response.setCartId(cart.getId());
@@ -406,7 +342,7 @@ public class CartServiceImpl implements CartService {
 		response.setSubtotal(subtotal);
 		response.setTotal(subtotal);
 
-		// Group by Shop for Split Orders (handle null shopId)
+		// Group by Shop for Split Orders
 		Map<Long, List<CartItem>> itemsByShop = items.stream().filter(item -> item.getShopId() != null)
 				.collect(Collectors.groupingBy(CartItem::getShopId));
 		response.setItemsByShop(itemsByShop);

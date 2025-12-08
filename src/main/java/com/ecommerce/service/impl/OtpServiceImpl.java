@@ -29,9 +29,6 @@ public class OtpServiceImpl implements OtpService {
 		this.emailService = emailService;
 	}
 
-	// ------------------------------------------------------------
-	// GENERATE OTP (NOW USING LOGGER INSTEAD OF EMAIL)
-	// ------------------------------------------------------------
 	@Override
 	public String generateOtp(OtpRequest request) {
 
@@ -44,7 +41,6 @@ public class OtpServiceImpl implements OtpService {
 		// Remove old OTPs
 		otpRepo.deleteOldOtps(identifier);
 
-		// Generate 4-digit OTP
 		String otp = String.valueOf(1000 + new Random().nextInt(9000));
 
 		OtpCode otpCode = new OtpCode();
@@ -55,16 +51,12 @@ public class OtpServiceImpl implements OtpService {
 
 		otpRepo.save(otpCode);
 
-		// **MOCK MODE: SHOW OTP IN CONSOLE**
 		log.info("Generated OTP for {} :’ {}", identifier, otp);
 		System.out.println("DEBUG OTP for " + identifier + " = " + otp);
 
 		return "OTP generated successfully";
 	}
 
-	// ------------------------------------------------------------
-	// VERIFY OTP
-	// ------------------------------------------------------------
 	@Override
 	public String verifyOtp(OtpVerifyRequest request) {
 

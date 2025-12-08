@@ -73,10 +73,8 @@ public class WishlistServiceImpl implements WishlistService {
 	@Override
 	public List<WishlistResponse> getUserWishlist(Long userId) {
 
-		List<WishlistItem> items=wishlistRepository.findByUserId(userId);
-		return items.stream()
-					.map(this::toResponse)
-					.collect(Collectors.toList());
+		List<WishlistItem> items = wishlistRepository.findByUserId(userId);
+		return items.stream().map(this::toResponse).collect(Collectors.toList());
 	}
 
 	private WishlistResponse toResponse(WishlistItem w) {
@@ -86,30 +84,22 @@ public class WishlistServiceImpl implements WishlistService {
 		r.setProductId(w.getProductId());
 		r.setAddedAt(w.getAddedAt());
 
-		Product product=productRepository.findById(w.getProductId())
-						.orElse(null);
-		if(product!=null) {
+		Product product = productRepository.findById(w.getProductId()).orElse(null);
+		if (product != null) {
 			r.setProductName(product.getName());
 			r.setPrice(product.getSellingPrice());
 		}
-		//for image
-		List <ProductImage> images=productImageRepository
-						.findByProductId(w.getProductId());
+		List<ProductImage> images = productImageRepository.findByProductId(w.getProductId());
 
-		//pick primary image if not choode 1st image
+		String finalImage = null;
+		if (images != null && !images.isEmpty()) {
+			ProductImage primary = images.stream().filter(ProductImage::isPrimary).findFirst().orElse(null);
 
-		String finalImage=null;
-		if(images!=null && !images.isEmpty()) {
-			ProductImage primary=images.stream()
-								.filter(ProductImage::isPrimary)
-								.findFirst()
-								.orElse(null);
-
-			if(primary!=null) {
-				finalImage=primary.getImagePath();
-			}else {
-				finalImage=images.get(0).getImagePath();
-				}
+			if (primary != null) {
+				finalImage = primary.getImagePath();
+			} else {
+				finalImage = images.get(0).getImagePath();
+			}
 		}
 
 		r.setImage(finalImage);

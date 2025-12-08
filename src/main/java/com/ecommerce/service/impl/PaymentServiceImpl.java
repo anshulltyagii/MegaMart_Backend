@@ -26,7 +26,6 @@ public class PaymentServiceImpl implements PaymentService {
 
 	private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
-	// Toggle this to TRUE to test failures, or FALSE for happy path
 	private static final boolean SIMULATION_ENABLED = false;
 	private static final double SUCCESS_RATE = 0.5;
 
@@ -42,10 +41,10 @@ public class PaymentServiceImpl implements PaymentService {
 		this.orderRepo = orderRepo;
 		this.inventoryService = inventoryService;
 
-		log.info("════════════════════════════════════════════════════════════");
+		log.info("---------------------------------------------------");
 		log.info("PaymentService Initialized - WITH STOCK RELEASE FIX");
 		log.info("Payment Failure -> Stock Auto-Released");
-		log.info("════════════════════════════════════════════════════════════");
+		log.info("---------------------------------------------------");
 	}
 
 	@Override
@@ -58,24 +57,19 @@ public class PaymentServiceImpl implements PaymentService {
 		logPaymentStart(correlationId, request, startTime);
 
 		try {
-			// 1. VALIDATION
 			validateRequest(request, correlationId);
 			Order order = validateAndGetOrder(request.getOrderId(), correlationId);
 			validateAmount(request.getAmount(), order.getTotalAmount(), correlationId);
 
-			// 2. CREATE PAYMENT RECORD
 			Payment payment = createPaymentRecord(request, correlationId);
 
-			// 3. PROCESS GATEWAY (SIMULATION)
 			boolean success = processPaymentGateway(correlationId);
 
 			if (success) {
-				// ✅ SUCCESS PATH
 				finalStatus = "SUCCESS";
 
 				log.info("[{}] TRANSACTION SUCCESSFUL", correlationId);
 
-				// Update Order Logic
 				if ("COD".equalsIgnoreCase(request.getMethod())) {
 					orderRepo.updatePaymentStatus(order.getId(), "PENDING", "CONFIRMED");
 					payment.setStatus("SUCCESS");
@@ -84,32 +78,26 @@ public class PaymentServiceImpl implements PaymentService {
 					payment.setStatus("SUCCESS");
 				}
 
-				// PERMANENTLY DEDUCT STOCK (Consume Reservation)
 				log.info("[{}] Consuming reserved inventory...", correlationId);
 				consumeInventory(order.getId(), correlationId);
 
 			} else {
-				// ❌ FAILURE PATH
 				finalStatus = "FAILED";
 				payment.setStatus("FAILED");
 
 				log.warn("[{}] TRANSACTION FAILED - RELEASING STOCK", correlationId);
 
-				// Mark payment failed in DB
 				orderRepo.updatePaymentStatus(order.getId(), "FAILED", "PLACED");
 
-				// 🔥 CRITICAL FIX: RELEASE RESERVED STOCK
 				releaseStockForFailedPayment(order.getId(), correlationId);
 			}
 
-			// Save Payment Record
 			return paymentRepo.save(payment);
 
 		} catch (Exception e) {
 			finalStatus = "ERROR";
-			log.error("[{}] ✖ UNEXPECTED ERROR: {}", correlationId, e.getMessage());
+			log.error("[{}]  UNEXPECTED ERROR: {}", correlationId, e.getMessage());
 
-			// 🔥 CRITICAL FIX: RELEASE RESERVED STOCK ON EXCEPTION TOO
 			releaseStockForFailedPayment(request.getOrderId(), correlationId);
 
 			throw new BadRequestException("Payment processing failed: " + e.getMessage());
@@ -118,9 +106,6 @@ public class PaymentServiceImpl implements PaymentService {
 		}
 	}
 
-	// ════════════════════════════════════════════════════════════════════════
-	// 🔥 THE FIX: RELEASE STOCK HELPER
-	// ════════════════════════════════════════════════════════════════════════
 	private void releaseStockForFailedPayment(Long orderId, String correlationId) {
 		if (orderId == null)
 			return;
@@ -129,9 +114,8 @@ public class PaymentServiceImpl implements PaymentService {
 			List<OrderItemResponse> items = orderRepo.findItemsByOrderId(orderId);
 			for (OrderItemResponse item : items) {
 				try {
-					// Release the reservation so stock becomes available again
 					inventoryService.releaseReserved(item.getProductId(), item.getQuantity());
-					log.info("[{}]   ⟲ Released reservation for Product {}", correlationId, item.getProductId());
+					log.info("[{}]    Released reservation for Product {}", correlationId, item.getProductId());
 				} catch (Exception e) {
 					log.error("[{}]   Failed to release stock for Product {}", correlationId, item.getProductId());
 				}
@@ -140,10 +124,6 @@ public class PaymentServiceImpl implements PaymentService {
 			log.error("[{}] Critical error releasing stock: {}", correlationId, e.getMessage());
 		}
 	}
-
-	// ════════════════════════════════════════════════════════════════════════
-	// OTHER HELPERS
-	// ════════════════════════════════════════════════════════════════════════
 
 	private void validateRequest(PaymentRequest request, String correlationId) {
 		if (request == null || request.getOrderId() == null || request.getAmount() == null) {
@@ -191,7 +171,6 @@ public class PaymentServiceImpl implements PaymentService {
 	}
 
 	private boolean processPaymentGateway(String correlationId) {
-		// Simple logic: returns true unless simulation is enabled and random < rate
 		return !SIMULATION_ENABLED || SECURE_RANDOM.nextDouble() < SUCCESS_RATE;
 	}
 
@@ -201,9 +180,9 @@ public class PaymentServiceImpl implements PaymentService {
 			for (OrderItemResponse item : items) {
 				try {
 					inventoryService.consumeReservedOnOrder(item.getProductId(), item.getQuantity());
-					log.info("[{}]   ✓ Consumed product {}", correlationId, item.getProductId());
+					log.info("[{}]    Consumed product {}", correlationId, item.getProductId());
 				} catch (Exception e) {
-					log.warn("[{}]   ⚠ Failed to consume product {}: {}", correlationId, item.getProductId(),
+					log.warn("[{}]    Failed to consume product {}: {}", correlationId, item.getProductId(),
 							e.getMessage());
 				}
 			}

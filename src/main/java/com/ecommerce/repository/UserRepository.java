@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public interface UserRepository {
 
-	Long save(User user); // return generated ID
+	Long save(User user); 
 
 	boolean update(User user);
 
