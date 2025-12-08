@@ -7,13 +7,13 @@ import java.util.Optional;
 
 public interface ProductVariantValueRepository {
 
-Long save(ProductVariantValue value);
+	Long save(ProductVariantValue value);
 
-boolean update(ProductVariantValue value);
+	boolean update(ProductVariantValue value);
 
-boolean delete(Long id);
+	boolean delete(Long id);
 
-Optional<ProductVariantValue> findById(Long id);
+	Optional<ProductVariantValue> findById(Long id);
 
-List<ProductVariantValue> findByGroupId(Long groupId);
+	List<ProductVariantValue> findByGroupId(Long groupId);
 }

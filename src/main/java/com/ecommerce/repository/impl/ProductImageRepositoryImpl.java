@@ -122,7 +122,7 @@ public class ProductImageRepositoryImpl implements ProductImageRepository {
 		try {
 			return jdbc.queryForObject(sql, Long.class, imageId);
 		} catch (Exception e) {
-			return null; // or throw custom exception
+			return null;
 		}
 	}
 

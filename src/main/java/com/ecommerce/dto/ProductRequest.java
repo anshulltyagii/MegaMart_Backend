@@ -12,7 +12,6 @@ public class ProductRequest {
 	private Double mrp;
 	private Boolean isActive;
 
-// Getters & Setters
 	public Long getShopId() {
 		return shopId;
 	}

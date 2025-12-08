@@ -1,7 +1,7 @@
 package com.ecommerce.dto;
 
 public class ReviewResponse {
-	
+
 	private Long id;
 	private Long productId;
 	private Long userId;
@@ -9,7 +9,7 @@ public class ReviewResponse {
 	private String title;
 	private String body;
 	private String createdAt;
-	
+
 	public ReviewResponse() {
 		super();
 	}

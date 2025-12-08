@@ -12,121 +12,88 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
+	private static final Logger log = LoggerFactory.getLogger(OrderController.class);
 
-    private final OrderService orderService;
+	private final OrderService orderService;
 
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
+	public OrderController(OrderService orderService) {
+		this.orderService = orderService;
+	}
 
-    // ════════════════════════════════════════════════════════════════════════
-    // PLACE ORDER (CHECKOUT)
-    // ════════════════════════════════════════════════════════════════════════
-    
-    @PostMapping("/checkout")
-    public ResponseEntity<List<Order>> checkout(
-            @RequestBody OrderRequest request,
-            HttpServletRequest httpRequest) {
-        
-        // Extract userId from JWT token
-        Long userId = (Long) httpRequest.getAttribute("currentUserId");
-        
-        log.info("POST /api/orders/checkout - User: {} placing order", userId);
-        
-        List<Order> orders = orderService.placeOrder(userId, request);
-        
-        log.info("User: {} - Created {} order(s)", userId, orders.size());
-        
-        return ResponseEntity.ok(orders);
-    }
+	@PostMapping("/checkout")
+	public ResponseEntity<List<Order>> checkout(@RequestBody OrderRequest request, HttpServletRequest httpRequest) {
 
-    // ════════════════════════════════════════════════════════════════════════
-    // GET USER ORDER HISTORY
-    // ════════════════════════════════════════════════════════════════════════
-    
-    @GetMapping
-    public ResponseEntity<List<OrderResponse>> getUserOrders(HttpServletRequest request) {
-        // Extract userId from JWT token
-        Long userId = (Long) request.getAttribute("currentUserId");
-        
-        log.info("GET /api/orders - Fetching orders for user: {}", userId);
-        
-        List<OrderResponse> orders = orderService.getUserOrders(userId);
-        
-        return ResponseEntity.ok(orders);
-    }
+		// Extract userId from JWT token
+		Long userId = (Long) httpRequest.getAttribute("currentUserId");
 
-    // ════════════════════════════════════════════════════════════════════════
-    // GET SPECIFIC ORDER DETAILS
-    // ════════════════════════════════════════════════════════════════════════
-    
-    @GetMapping("/{orderId}")
-    public ResponseEntity<OrderResponse> getOrderDetails(
-            @PathVariable Long orderId,
-            HttpServletRequest request) {
-        
-        // Extract userId from JWT token
-        Long userId = (Long) request.getAttribute("currentUserId");
-        
-        log.info("GET /api/orders/{} - User: {} fetching order details", orderId, userId);
-        
-        // Service layer will verify order belongs to user
-        OrderResponse order = orderService.getOrderDetails(orderId);
-        
-        return ResponseEntity.ok(order);
-    }
+		log.info("POST /api/orders/checkout - User: {} placing order", userId);
 
-    // ════════════════════════════════════════════════════════════════════════
-    // CANCEL ORDER
-    // ════════════════════════════════════════════════════════════════════════
-    
-    @PutMapping("/{orderId}/cancel")
-    public ResponseEntity<String> cancelOrder(
-            @PathVariable Long orderId,
-            HttpServletRequest request) {
-        
-        
-        Long userId = (Long) request.getAttribute("currentUserId");
-        
-        log.info("PUT /api/orders/{}/cancel - User: {} cancelling order", orderId, userId);
-        
-       
-        orderService.cancelOrder(orderId);
-        
-        return ResponseEntity.ok("Order cancelled successfully. Inventory has been released.");
-    }
+		List<Order> orders = orderService.placeOrder(userId, request);
 
-   
-    @GetMapping("/admin/all")
-    public ResponseEntity<List<OrderResponse>> getAllOrders(HttpServletRequest request) {
+		log.info("User: {} - Created {} order(s)", userId, orders.size());
 
-        
-        log.info("GET /api/orders/admin/all - Fetching all orders");
-        
-        List<OrderResponse> orders = orderService.getAllOrders();
-        
-        return ResponseEntity.ok(orders);
-    }
+		return ResponseEntity.ok(orders);
+	}
 
-   
-    @PatchMapping("/admin/{orderId}/status")
-    public ResponseEntity<OrderResponse> updateOrderStatus(
-            @PathVariable Long orderId, 
-            @RequestParam String status,
-            HttpServletRequest request) {
-        
-       
-        
-        log.info("PATCH /api/orders/admin/{}/status - Updating to: {}", orderId, status);
-        
-        OrderResponse updatedOrder = orderService.updateOrderStatus(orderId, status);
-        
-        return ResponseEntity.ok(updatedOrder);
-    }
+	@GetMapping
+	public ResponseEntity<List<OrderResponse>> getUserOrders(HttpServletRequest request) {
+		// Extract userId from JWT token
+		Long userId = (Long) request.getAttribute("currentUserId");
+
+		log.info("GET /api/orders - Fetching orders for user: {}", userId);
+
+		List<OrderResponse> orders = orderService.getUserOrders(userId);
+
+		return ResponseEntity.ok(orders);
+	}
+
+	@GetMapping("/{orderId}")
+	public ResponseEntity<OrderResponse> getOrderDetails(@PathVariable Long orderId, HttpServletRequest request) {
+
+		// Extract userId from JWT token
+		Long userId = (Long) request.getAttribute("currentUserId");
+
+		log.info("GET /api/orders/{} - User: {} fetching order details", orderId, userId);
+
+		OrderResponse order = orderService.getOrderDetails(orderId);
+
+		return ResponseEntity.ok(order);
+	}
+
+	@PutMapping("/{orderId}/cancel")
+	public ResponseEntity<String> cancelOrder(@PathVariable Long orderId, HttpServletRequest request) {
+
+		Long userId = (Long) request.getAttribute("currentUserId");
+
+		log.info("PUT /api/orders/{}/cancel - User: {} cancelling order", orderId, userId);
+
+		orderService.cancelOrder(orderId);
+
+		return ResponseEntity.ok("Order cancelled successfully. Inventory has been released.");
+	}
+
+	@GetMapping("/admin/all")
+	public ResponseEntity<List<OrderResponse>> getAllOrders(HttpServletRequest request) {
+
+		log.info("GET /api/orders/admin/all - Fetching all orders");
+
+		List<OrderResponse> orders = orderService.getAllOrders();
+
+		return ResponseEntity.ok(orders);
+	}
+
+	@PatchMapping("/admin/{orderId}/status")
+	public ResponseEntity<OrderResponse> updateOrderStatus(@PathVariable Long orderId, @RequestParam String status,
+			HttpServletRequest request) {
+
+		log.info("PATCH /api/orders/admin/{}/status - Updating to: {}", orderId, status);
+
+		OrderResponse updatedOrder = orderService.updateOrderStatus(orderId, status);
+
+		return ResponseEntity.ok(updatedOrder);
+	}
 }

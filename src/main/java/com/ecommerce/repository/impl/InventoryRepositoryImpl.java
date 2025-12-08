@@ -18,9 +18,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-// ------------------------------------------------------------
-// FIND BY PRODUCT
-// ------------------------------------------------------------
 	@Override
 	public Optional<Inventory> findByProductId(Long productId) {
 		String sql = "SELECT * FROM inventory WHERE product_id = ?";
@@ -29,9 +26,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return list.stream().findFirst();
 	}
 
-// ------------------------------------------------------------
-// CREATE INITIAL INVENTORY ROW
-// ------------------------------------------------------------
 	@Override
 	public boolean createInventory(Long productId, int initialQuantity) {
 		String sql = """
@@ -42,9 +36,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return jdbcTemplate.update(sql, productId, initialQuantity) > 0;
 	}
 
-// ------------------------------------------------------------
-// UPDATE FULL OBJECT
-// ------------------------------------------------------------
 	@Override
 	public boolean update(Inventory inventory) {
 		String sql = """
@@ -56,9 +47,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return jdbcTemplate.update(sql, inventory.getQuantity(), inventory.getReserved(), inventory.getProductId()) > 0;
 	}
 
-// ------------------------------------------------------------
-// INCREASE STOCK (admin or stock arrival)
-// ------------------------------------------------------------
 	@Override
 	public boolean increaseStock(Long productId, int quantity) {
 		String sql = """
@@ -70,10 +58,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return jdbcTemplate.update(sql, quantity, productId) > 0;
 	}
 
-// ------------------------------------------------------------
-// DECREASE STOCK (manual)
-// Ensure quantity does not go negative
-// ------------------------------------------------------------
 	@Override
 	public boolean decreaseStock(Long productId, int quantity) {
 		String sql = """
@@ -86,11 +70,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return jdbcTemplate.update(sql, quantity, productId, quantity) > 0;
 	}
 
-// ------------------------------------------------------------
-// RESERVE STOCK FOR CHECKOUT
-// available = quantity - reserved
-// Condition: quantity - reserved >= requested
-// ------------------------------------------------------------
 	@Override
 	public boolean reserveStock(Long productId, int quantity) {
 		String sql = """
@@ -103,9 +82,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return jdbcTemplate.update(sql, quantity, productId, quantity) > 0;
 	}
 
-// ------------------------------------------------------------
-// RELEASE RESERVED STOCK (cancel / timeout)
-// ------------------------------------------------------------
 	@Override
 	public boolean releaseReservedStock(Long productId, int quantity) {
 		String sql = """
@@ -118,11 +94,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return jdbcTemplate.update(sql, quantity, productId, quantity) > 0;
 	}
 
-// ------------------------------------------------------------
-// CONSUME RESERVED ON ORDER CONFIRM
-// quantity = quantity - reservedQty
-// reserved = reserved - reservedQty
-// ------------------------------------------------------------
 	@Override
 	public boolean consumeReservedOnOrder(Long productId, int quantity) {
 		String sql = """
@@ -135,10 +106,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 				AND quantity >= ?
 				""";
 
-		return jdbcTemplate.update(sql, quantity, // decrease quantity
-				quantity, // decrease reserved
-				productId, quantity, // ensure enough reserved
-				quantity // ensure enough quantity
-		) > 0;
+		return jdbcTemplate.update(sql, quantity, quantity, productId, quantity, quantity) > 0;
 	}
 }

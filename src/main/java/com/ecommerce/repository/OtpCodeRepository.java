@@ -6,15 +6,11 @@ import java.util.Optional;
 
 public interface OtpCodeRepository {
 
-    // Save new OTP to database
-    Long save(OtpCode otp);
+	Long save(OtpCode otp);
 
-    // Fetch latest active OTP for a user (identifier)
-    Optional<OtpCode> findLatestValidOtp(String identifier);
+	Optional<OtpCode> findLatestValidOtp(String identifier);
 
-    // Mark OTP as used
-    boolean markOtpUsed(Long id);
+	boolean markOtpUsed(Long id);
 
-    // Delete old OTPs for the same user/identifier
-    boolean deleteOldOtps(String identifier);
+	boolean deleteOldOtps(String identifier);
 }

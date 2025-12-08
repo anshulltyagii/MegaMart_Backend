@@ -6,29 +6,23 @@ import java.util.Optional;
 
 public interface UserRepository {
 
-	// ---- CREATE ----
 	Long save(User user); // return generated ID
 
-	// ---- UPDATE ----
 	boolean update(User user);
 
-	// Soft delete (by changing account_status = SUSPENDED)
 	boolean softDelete(Long id);
 
-	// Update only status
 	boolean updateAccountStatus(Long id, String status);
 
-	// ---- READ ----
 	Optional<User> findById(Long id);
 
-	// User must be ACTIVE or PENDING (not suspended)
 	Optional<User> findActiveByUsername(String username);
 
 	Optional<User> findByEmail(String email);
 
-	List<User> findAllActive(); // all ACTIVE users
+	List<User> findAllActive();
 
-	List<User> findAll(); // including suspended (admin use)
+	List<User> findAll();
 
 	boolean existsByEmail(String email);
 

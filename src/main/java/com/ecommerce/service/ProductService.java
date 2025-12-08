@@ -18,7 +18,7 @@ public interface ProductService {
 
 	List<ProductResponse> getProductsByShop(Long shopId);
 
-	List<ProductResponse> getAllProducts(); // admin
+	List<ProductResponse> getAllProducts();
 
 	boolean softDeleteProduct(Long id);
 

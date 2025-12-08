@@ -24,18 +24,12 @@ public class ProductVariantController {
 		this.productService = productService;
 	}
 
-	// -----------------------------------------------------------
-	// UTILITY â€” CHECK ADMIN or SHOPKEEPER who owns the product
-	// -----------------------------------------------------------
 	private boolean canAccess(Long productId, User currentUser) {
 		return currentUser.getRole() == UserRole.ADMIN
 				|| productService.productBelongsToUser(productId, currentUser.getId());
 	}
 
-	// -----------------------------------------------------------
 	// GROUPS
-	// -----------------------------------------------------------
-
 	@PostMapping("/groups")
 	public ResponseEntity<?> createGroup(@PathVariable Long productId, @RequestBody ProductVariantGroupRequest request,
 			@RequestAttribute("currentUser") User currentUser) {
@@ -76,9 +70,7 @@ public class ProductVariantController {
 		return ResponseEntity.ok("Variant group deleted");
 	}
 
-	// -----------------------------------------------------------
 	// VALUES
-	// -----------------------------------------------------------
 
 	@PostMapping("/groups/{groupId}/values")
 	public ResponseEntity<?> createValue(@PathVariable Long productId, @PathVariable Long groupId,
@@ -120,9 +112,7 @@ public class ProductVariantController {
 		return ResponseEntity.ok("Variant value deleted");
 	}
 
-	// -----------------------------------------------------------
 	// STOCK
-	// -----------------------------------------------------------
 
 	@PostMapping("/values/{valueId}/stock")
 	public ResponseEntity<?> upsertStock(@PathVariable Long productId, @PathVariable Long valueId,

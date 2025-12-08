@@ -1,23 +1,20 @@
 package com.ecommerce.dto;
 
 import java.time.LocalDate;
-import java.util.Date;
-
-import com.ecommerce.enums.DiscountType;
 
 public class CouponResponse {
 
-    private Long id;
-    private String code;
-    private String discountType;
-    private double discountValue;
-    private double minOrderAmount;
-    private LocalDate validFrom;
-    private LocalDate validTo;
-    private boolean isActive;
-    private Long shopId;
-	
-    public CouponResponse() {
+	private Long id;
+	private String code;
+	private String discountType;
+	private double discountValue;
+	private double minOrderAmount;
+	private LocalDate validFrom;
+	private LocalDate validTo;
+	private boolean isActive;
+	private Long shopId;
+
+	public CouponResponse() {
 		super();
 	}
 
@@ -75,8 +72,6 @@ public class CouponResponse {
 		this.minOrderAmount = minOrderAmount;
 	}
 
-	
-
 	public LocalDate getValidFrom() {
 		return validFrom;
 	}
@@ -115,7 +110,5 @@ public class CouponResponse {
 				+ discountValue + ", minOrderAmount=" + minOrderAmount + ", validFrom=" + validFrom + ", validTo="
 				+ validTo + ", shopId=" + shopId + ", isActive=" + isActive + "]";
 	}
-
-	
 
 }

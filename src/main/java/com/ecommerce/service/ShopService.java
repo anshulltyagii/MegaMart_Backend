@@ -6,14 +6,22 @@ import com.ecommerce.dto.ShopResponse;
 import java.util.List;
 
 public interface ShopService {
-    ShopResponse createShop(ShopRequest req);
-    ShopResponse updateShop(Long id, ShopRequest req);
-    ShopResponse getShopById(Long id);
-    List<ShopResponse> getAllShops();
-    List<ShopResponse> getPendingApprovalShops();
-    boolean approveShop(Long shopId);
-    boolean rejectShop(Long shopId);
-    boolean softDeleteShop(Long shopId);
-    List<ShopResponse> getShopsByOwnerId(Long ownerUserId);
+	ShopResponse createShop(ShopRequest req);
+
+	ShopResponse updateShop(Long id, ShopRequest req);
+
+	ShopResponse getShopById(Long id);
+
+	List<ShopResponse> getAllShops();
+
+	List<ShopResponse> getPendingApprovalShops();
+
+	boolean approveShop(Long shopId);
+
+	boolean rejectShop(Long shopId);
+
+	boolean softDeleteShop(Long shopId);
+
+	List<ShopResponse> getShopsByOwnerId(Long ownerUserId);
 
 }

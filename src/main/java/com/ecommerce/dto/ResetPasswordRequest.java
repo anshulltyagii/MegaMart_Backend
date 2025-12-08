@@ -1,9 +1,5 @@
 package com.ecommerce.dto;
 
-/**
- * DTO for password reset (used in the forgot-password flow). Contains the email
- * (identifier) and the new password to set.
- */
 public class ResetPasswordRequest {
 
 	private String email;

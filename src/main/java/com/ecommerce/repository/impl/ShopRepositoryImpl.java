@@ -26,7 +26,6 @@ public class ShopRepositoryImpl implements ShopRepository {
 		String sql = "INSERT INTO shops (owner_user_id, name, description, address, is_approved, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
 		jdbcTemplate.update(sql, shop.getOwnerUserId(), shop.getName(), shop.getDescription(), shop.getAddress(),
 				shop.getIsApproved(), shop.getIsActive(), Timestamp.valueOf(LocalDateTime.now()));
-		// return last inserted id (simple approach)
 		Long id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 		return id;
 	}

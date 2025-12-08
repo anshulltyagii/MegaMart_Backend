@@ -5,9 +5,7 @@ import com.ecommerce.dto.OtpVerifyRequest;
 
 public interface OtpService {
 
-    // Generate OTP for any identifier (email/phone)
-    String generateOtp(OtpRequest request);
+	String generateOtp(OtpRequest request);
 
-    // Verify OTP
-    String verifyOtp(OtpVerifyRequest request);
+	String verifyOtp(OtpVerifyRequest request);
 }

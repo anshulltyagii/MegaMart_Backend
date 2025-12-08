@@ -14,34 +14,34 @@ import java.util.Optional;
 @Repository
 public class WishlistRepositoryImpl implements WishlistRepository {
 
-    @Autowired
+	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-    @Override
-    public WishlistItem add(Long userId, Long productId) {
-        String sql = "INSERT INTO wishlist_items (user_id, product_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql, userId, productId);
+	@Override
+	public WishlistItem add(Long userId, Long productId) {
+		String sql = "INSERT INTO wishlist_items (user_id, product_id) VALUES (?, ?)";
+		jdbcTemplate.update(sql, userId, productId);
 
-        return findItem(userId, productId).orElse(null);
-    }
+		return findItem(userId, productId).orElse(null);
+	}
 
-    @Override
-    public boolean remove(Long userId, Long productId) {
-        String sql = "DELETE FROM wishlist_items WHERE user_id = ? AND product_id = ?";
-        return jdbcTemplate.update(sql, userId, productId) > 0;
-    }
+	@Override
+	public boolean remove(Long userId, Long productId) {
+		String sql = "DELETE FROM wishlist_items WHERE user_id = ? AND product_id = ?";
+		return jdbcTemplate.update(sql, userId, productId) > 0;
+	}
 
-    @Override
-    public List<WishlistItem> findByUserId(Long userId) {
-        String sql = "SELECT * FROM wishlist_items WHERE user_id = ?";
-        return jdbcTemplate.query(sql, new WishlistRowMapper(), userId);
-    }
+	@Override
+	public List<WishlistItem> findByUserId(Long userId) {
+		String sql = "SELECT * FROM wishlist_items WHERE user_id = ?";
+		return jdbcTemplate.query(sql, new WishlistRowMapper(), userId);
+	}
 
-    @Override
-    public Optional<WishlistItem> findItem(Long userId, Long productId) {
-        String sql = "SELECT * FROM wishlist_items WHERE user_id = ? AND product_id = ?";
-        List<WishlistItem> list = jdbcTemplate.query(sql, new WishlistRowMapper(), userId, productId);
-        return list.stream().findFirst();
-    }
+	@Override
+	public Optional<WishlistItem> findItem(Long userId, Long productId) {
+		String sql = "SELECT * FROM wishlist_items WHERE user_id = ? AND product_id = ?";
+		List<WishlistItem> list = jdbcTemplate.query(sql, new WishlistRowMapper(), userId, productId);
+		return list.stream().findFirst();
+	}
 
 }

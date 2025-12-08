@@ -3,12 +3,12 @@ package com.ecommerce.model;
 import java.time.LocalDateTime;
 
 public class AdminLog {
-    private Long id;
-    private Long adminUserId; 
-    private String action;    
-    private LocalDateTime createdAt;
-	
-    public AdminLog() {
+	private Long id;
+	private Long adminUserId;
+	private String action;
+	private LocalDateTime createdAt;
+
+	public AdminLog() {
 		super();
 	}
 

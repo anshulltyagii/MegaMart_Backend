@@ -137,31 +137,30 @@ public class ProductRepositoryImpl implements ProductRepository {
 		}
 		return jdbcTemplate.query(sb.toString(), new ProductRowMapper(), params);
 	}
-	
+
 	@Override
 	public Long findShopOwnerId(Long shopId) {
-	    try {
-	        String sql = "SELECT owner_user_id FROM shops WHERE id = ?";
-	        return jdbcTemplate.queryForObject(sql, Long.class, shopId);
-	    } catch (Exception e) {
-	        return null;
-	    }
+		try {
+			String sql = "SELECT owner_user_id FROM shops WHERE id = ?";
+			return jdbcTemplate.queryForObject(sql, Long.class, shopId);
+		} catch (Exception e) {
+			return null;
+		}
 	}
-	
+
 	@Override
 	public List<String> searchSuggestions(String query) {
 
-	    String sql = """
-	        SELECT name 
-	        FROM products 
-	        WHERE is_active = TRUE 
-	        AND name LIKE ? 
-	        ORDER BY name ASC 
-	        LIMIT 10
-	    """;
+		String sql = """
+				    SELECT name
+				    FROM products
+				    WHERE is_active = TRUE
+				    AND name LIKE ?
+				    ORDER BY name ASC
+				    LIMIT 10
+				""";
 
-	    return jdbcTemplate.queryForList(sql, String.class, query + "%");
+		return jdbcTemplate.queryForList(sql, String.class, query + "%");
 	}
-
 
 }

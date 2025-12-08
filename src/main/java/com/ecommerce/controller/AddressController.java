@@ -10,100 +10,64 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Address Controller
- * Handles CRUD operations for user addresses.
- * HARD DELETE version.
- */
 @RestController
 @RequestMapping("/api/addresses")
 public class AddressController {
 
-    private final AddressService addressService;
+	private final AddressService addressService;
 
-    // Constructor Injection
-    public AddressController(AddressService addressService) {
-        this.addressService = addressService;
-    }
+	public AddressController(AddressService addressService) {
+		this.addressService = addressService;
+	}
 
-    // NOTE: For now userId is passed as a query param or header
-    // Later when JWT is added â†’ userId will come from token.
+	@PostMapping
+	public ResponseEntity<AddressResponse> createAddress(@RequestParam Long userId, // temporary until JWT added
+			@RequestBody AddressRequest request) {
 
-    // ------------------------------------------------------------
-    // CREATE ADDRESS
-    // ------------------------------------------------------------
-    @PostMapping
-    public ResponseEntity<AddressResponse> createAddress(
-            @RequestParam Long userId,    // temporary until JWT added
-            @RequestBody AddressRequest request) {
+		AddressResponse response = addressService.createAddress(userId, request);
+		return new ResponseEntity<>(response, HttpStatus.CREATED);
+	}
 
-        AddressResponse response = addressService.createAddress(userId, request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
+	@PutMapping("/{addressId}")
+	public ResponseEntity<AddressResponse> updateAddress(@RequestParam Long userId, @PathVariable Long addressId,
+			@RequestBody AddressRequest request) {
 
-    // ------------------------------------------------------------
-    // UPDATE ADDRESS
-    // ------------------------------------------------------------
-    @PutMapping("/{addressId}")
-    public ResponseEntity<AddressResponse> updateAddress(
-            @RequestParam Long userId,
-            @PathVariable Long addressId,
-            @RequestBody AddressRequest request) {
+		AddressResponse response = addressService.updateAddress(userId, addressId, request);
+		return ResponseEntity.ok(response);
+	}
 
-        AddressResponse response = addressService.updateAddress(userId, addressId, request);
-        return ResponseEntity.ok(response);
-    }
+	@GetMapping("/{addressId}")
+	public ResponseEntity<AddressResponse> getAddress(@RequestParam Long userId, @PathVariable Long addressId) {
 
-    // ------------------------------------------------------------
-    // GET SINGLE ADDRESS
-    // ------------------------------------------------------------
-    @GetMapping("/{addressId}")
-    public ResponseEntity<AddressResponse> getAddress(
-            @RequestParam Long userId,
-            @PathVariable Long addressId) {
+		AddressResponse response = addressService.getAddress(userId, addressId);
+		return ResponseEntity.ok(response);
+	}
 
-        AddressResponse response = addressService.getAddress(userId, addressId);
-        return ResponseEntity.ok(response);
-    }
+	@GetMapping
+	public ResponseEntity<List<AddressResponse>> getAllAddresses(@RequestParam Long userId) {
+		List<AddressResponse> list = addressService.getAllAddresses(userId);
+		return ResponseEntity.ok(list);
+	}
 
-    // ------------------------------------------------------------
-    // GET ALL ADDRESSES OF USER
-    // ------------------------------------------------------------
-    @GetMapping
-    public ResponseEntity<List<AddressResponse>> getAllAddresses(@RequestParam Long userId) {
-        List<AddressResponse> list = addressService.getAllAddresses(userId);
-        return ResponseEntity.ok(list);
-    }
+	@DeleteMapping("/{addressId}")
+	public ResponseEntity<String> deleteAddress(@RequestParam Long userId, @PathVariable Long addressId) {
 
-    // ------------------------------------------------------------
-    // DELETE ADDRESS (HARD DELETE)
-    // ------------------------------------------------------------
-    @DeleteMapping("/{addressId}")
-    public ResponseEntity<String> deleteAddress(
-            @RequestParam Long userId,
-            @PathVariable Long addressId) {
+		boolean deleted = addressService.deleteAddress(userId, addressId);
 
-        boolean deleted = addressService.deleteAddress(userId, addressId);
+		if (deleted) {
+			return ResponseEntity.ok("Address deleted successfully.");
+		}
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to delete address.");
+	}
 
-        if (deleted) {
-            return ResponseEntity.ok("Address deleted successfully.");
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to delete address.");
-    }
+	@PatchMapping("/{addressId}/default")
+	public ResponseEntity<String> setDefaultAddress(@RequestParam Long userId, @PathVariable Long addressId) {
 
-    // ------------------------------------------------------------
-    // SET DEFAULT ADDRESS
-    // ------------------------------------------------------------
-    @PatchMapping("/{addressId}/default")
-    public ResponseEntity<String> setDefaultAddress(
-            @RequestParam Long userId,
-            @PathVariable Long addressId) {
+		boolean updated = addressService.setDefaultAddress(userId, addressId);
 
-        boolean updated = addressService.setDefaultAddress(userId, addressId);
-
-        if (updated) {
-            return ResponseEntity.ok("Default address updated successfully.");
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unable to set default address.");
-    }
+		if (updated) {
+			return ResponseEntity.ok("Default address updated successfully.");
+		}
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unable to set default address.");
+	}
 }

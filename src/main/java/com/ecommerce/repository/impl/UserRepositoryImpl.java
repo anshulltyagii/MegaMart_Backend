@@ -1,7 +1,6 @@
 package com.ecommerce.repository.impl;
 
 import com.ecommerce.model.User;
-import com.ecommerce.enums.AccountStatus;
 import com.ecommerce.repository.UserRepository;
 import com.ecommerce.repository.rowmapper.UserRowMapper;
 
@@ -25,9 +24,6 @@ public class UserRepositoryImpl implements UserRepository {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// ------------------------------------------------------------
-	// SAVE USER
-	// ------------------------------------------------------------
 	@Override
 	public Long save(User user) {
 		String sql = """
@@ -52,9 +48,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return keyHolder.getKey().longValue();
 	}
 
-	// ------------------------------------------------------------
-	// UPDATE USER
-	// ------------------------------------------------------------
 	@Override
 	public boolean update(User user) {
 		String sql = """
@@ -72,10 +65,6 @@ public class UserRepositoryImpl implements UserRepository {
 				user.getAccountStatus().name(), user.getRole().name(), user.getId()) > 0;
 	}
 
-	// ------------------------------------------------------------
-	// SOFT DELETE USER (NO HARD DELETE ALLOWED)
-	// account_status = SUSPENDED
-	// ------------------------------------------------------------
 	@Override
 	public boolean softDelete(Long id) {
 		String sql = """
@@ -84,9 +73,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return jdbcTemplate.update(sql, id) > 0;
 	}
 
-	// ------------------------------------------------------------
-	// UPDATE ACCOUNT STATUS
-	// ------------------------------------------------------------
 	@Override
 	public boolean updateAccountStatus(Long id, String status) {
 		String sql = """
@@ -95,9 +81,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return jdbcTemplate.update(sql, status, id) > 0;
 	}
 
-	// ------------------------------------------------------------
-	// FIND BY ID
-	// ------------------------------------------------------------
 	@Override
 	public Optional<User> findById(Long id) {
 		String sql = "SELECT * FROM users WHERE id = ?";
@@ -107,10 +90,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return users.stream().findFirst();
 	}
 
-	// ------------------------------------------------------------
-	// FIND ACTIVE USER BY USERNAME
-	// For login â†’ only ACTIVE user allowed
-	// ------------------------------------------------------------
 	@Override
 	public Optional<User> findActiveByUsername(String username) {
 		String sql = """
@@ -124,9 +103,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return list.stream().findFirst();
 	}
 
-	// ------------------------------------------------------------
-	// FIND BY EMAIL
-	// ------------------------------------------------------------
 	@Override
 	public Optional<User> findByEmail(String email) {
 		String sql = "SELECT * FROM users WHERE email = ?";
@@ -136,9 +112,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return list.stream().findFirst();
 	}
 
-	// ------------------------------------------------------------
-	// FIND ALL ACTIVE USERS
-	// ------------------------------------------------------------
 	@Override
 	public List<User> findAllActive() {
 		String sql = """
@@ -149,19 +122,12 @@ public class UserRepositoryImpl implements UserRepository {
 		return jdbcTemplate.query(sql, new UserRowMapper());
 	}
 
-	// ------------------------------------------------------------
-	// FIND ALL USERS (ADMIN)
-	// ACTIVE + PENDING + SUSPENDED
-	// ------------------------------------------------------------
 	@Override
 	public List<User> findAll() {
 		String sql = "SELECT * FROM users";
 		return jdbcTemplate.query(sql, new UserRowMapper());
 	}
 
-	// ------------------------------------------------------------
-	// EXISTS BY EMAIL
-	// ------------------------------------------------------------
 	@Override
 	public boolean existsByEmail(String email) {
 		String sql = "SELECT COUNT(*) FROM users WHERE email = ?";
@@ -169,9 +135,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return count != null && count > 0;
 	}
 
-	// ------------------------------------------------------------
-	// EXISTS BY USERNAME
-	// ------------------------------------------------------------
 	@Override
 	public boolean existsByUsername(String username) {
 		String sql = "SELECT COUNT(*) FROM users WHERE username = ?";

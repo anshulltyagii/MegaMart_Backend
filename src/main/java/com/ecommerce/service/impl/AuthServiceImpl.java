@@ -29,9 +29,6 @@ public class AuthServiceImpl implements AuthService {
 		this.jwtUtil = jwtUtil;
 	}
 
-	// ==========================================
-	// REGISTER
-	// ==========================================
 	@Override
 	public UserResponse register(UserRequest req) {
 
@@ -52,7 +49,6 @@ public class AuthServiceImpl implements AuthService {
 		user.setAccountStatus(AccountStatus.ACTIVE);
 		user.setCreatedAt(LocalDateTime.now());
 
-		// Hash Password
 		String hashed = BCrypt.hashpw(req.getPassword(), BCrypt.gensalt());
 		user.setPasswordHash(hashed);
 
@@ -62,9 +58,6 @@ public class AuthServiceImpl implements AuthService {
 		return toResponse(user);
 	}
 
-	// ==========================================
-	// LOGIN
-	// ==========================================
 	@Override
 	public String login(LoginRequest req) {
 
@@ -76,17 +69,14 @@ public class AuthServiceImpl implements AuthService {
 
 		User user;
 
-		// If input contains @ → treat as email
 		if (input.contains("@")) {
 			user = userRepository.findActiveByEmail(input)
 					.orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 		} else {
-			// otherwise treat as username
 			user = userRepository.findActiveByUsername(input)
 					.orElseThrow(() -> new UnauthorizedException("Invalid username or password"));
 		}
 
-		// Validate password (hashed stored in DB)
 		if (!BCrypt.checkpw(req.getPassword(), user.getPasswordHash())) {
 			throw new UnauthorizedException("Invalid credentials");
 		}
@@ -94,7 +84,6 @@ public class AuthServiceImpl implements AuthService {
 		return jwtUtil.generateToken(user);
 	}
 
-	// Convert model to DTO
 	private UserResponse toResponse(User user) {
 		UserResponse resp = new UserResponse();
 
@@ -119,8 +108,7 @@ public class AuthServiceImpl implements AuthService {
 		String newHash = BCrypt.hashpw(req.getNewPassword(), BCrypt.gensalt());
 		user.setPasswordHash(newHash);
 
-		userRepository.update(user); // 🔥 existing update logic reused
-
+		userRepository.update(user);
 		return "Password updated successfully!";
 	}
 

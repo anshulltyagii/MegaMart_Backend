@@ -12,35 +12,32 @@ import com.ecommerce.enums.AccountStatus;
 
 public class UserRowMapper implements RowMapper<User> {
 
-    @Override
-    public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+	@Override
+	public User mapRow(ResultSet rs, int rowNum) throws SQLException {
 
-        User user = new User();
+		User user = new User();
 
-        user.setId(rs.getLong("id"));
-        user.setUsername(rs.getString("username"));
-        user.setEmail(rs.getString("email"));
-        user.setPasswordHash(rs.getString("password_hash"));
+		user.setId(rs.getLong("id"));
+		user.setUsername(rs.getString("username"));
+		user.setEmail(rs.getString("email"));
+		user.setPasswordHash(rs.getString("password_hash"));
 
-        // Enum mapping
-        String roleStr = rs.getString("role");
-        if (roleStr != null) {
-            user.setRole(UserRole.valueOf(roleStr));
-        }
+		String roleStr = rs.getString("role");
+		if (roleStr != null) {
+			user.setRole(UserRole.valueOf(roleStr));
+		}
 
-        user.setFullName(rs.getString("full_name"));
-        user.setPhone(rs.getString("phone"));
+		user.setFullName(rs.getString("full_name"));
+		user.setPhone(rs.getString("phone"));
 
-        // AccountStatus enum mapping
-        String accStatus = rs.getString("account_status");
-        if (accStatus != null) {
-            user.setAccountStatus(AccountStatus.valueOf(accStatus));
-        }
+		String accStatus = rs.getString("account_status");
+		if (accStatus != null) {
+			user.setAccountStatus(AccountStatus.valueOf(accStatus));
+		}
 
-        // Timestamp â†’ LocalDateTime
-        LocalDateTime createdAt = rs.getTimestamp("created_at").toLocalDateTime();
-        user.setCreatedAt(createdAt);
+		LocalDateTime createdAt = rs.getTimestamp("created_at").toLocalDateTime();
+		user.setCreatedAt(createdAt);
 
-        return user;
-    }
+		return user;
+	}
 }

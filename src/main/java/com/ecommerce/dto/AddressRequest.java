@@ -1,9 +1,5 @@
 package com.ecommerce.dto;
 
-/**
- * DTO for creating/updating a user's address. Comes from client (Postman /
- * Frontend).
- */
 public class AddressRequest {
 
 	private String fullName;
@@ -20,10 +16,7 @@ public class AddressRequest {
 	// HOME / WORK
 	private String addressType;
 
-	// Optional - if true, user wants to set this address as default
 	private Boolean isDefault;
-
-	// -------- Getters & Setters --------
 
 	public String getFullName() {
 		return fullName;

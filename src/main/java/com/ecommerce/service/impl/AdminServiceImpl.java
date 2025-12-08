@@ -52,7 +52,7 @@ public class AdminServiceImpl implements AdminService {
 			log.setCreatedAt(LocalDateTime.now());
 			adminLogsRepository.save(log);
 		} catch (Exception ex) {
-			// don't fail admin operations if logging fails
+
 		}
 	}
 
@@ -149,14 +149,11 @@ public class AdminServiceImpl implements AdminService {
 	public CouponResponse createCoupon(Long adminUserId, CouponRequest request) {
 		Coupon c = new Coupon();
 		c.setCode(request.getCode());
-		c.setDiscountType(DiscountType.valueOf(request.getDiscountType())); // assume service will convert to enum later
-																			// if needed
+		c.setDiscountType(DiscountType.valueOf(request.getDiscountType()));
 		c.setDiscountValue(request.getDiscountValue());
 		c.setMinOrderAmount(request.getMinOrderAmount());
-		// DTO has Dates; service / repo convert as previously discussed
 		c.setValidFrom(LocalDate.parse(request.getValidFrom()));
-		c.setValidTo(LocalDate.parse(request.getValidTo())); // set in repo impl or convert here (depends where you
-																// stored)
+		c.setValidTo(LocalDate.parse(request.getValidTo()));
 		c.setShopId(request.getShopId());
 		c.setActive(true);
 		couponRepository.save(c);
@@ -203,6 +200,5 @@ public class AdminServiceImpl implements AdminService {
 			return r;
 		}).collect(Collectors.toList());
 	}
-	
-	
+
 }

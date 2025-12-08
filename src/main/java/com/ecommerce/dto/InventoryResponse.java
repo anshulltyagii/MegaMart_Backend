@@ -5,9 +5,8 @@ public class InventoryResponse {
 	private int quantity;
 	private int reserved;
 	private int available;
-	private String stockStatus; 
+	private String stockStatus;
 
-	// ---------------- Getters & Setters ----------------
 	public Long getProductId() {
 		return productId;
 	}

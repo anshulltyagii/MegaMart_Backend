@@ -4,25 +4,49 @@ import java.math.BigDecimal;
 
 public class ProductVariantStock {
 
-private Long id;
-private Long productId; // FK -> products.id
-private Long variantValueId; // FK -> product_variant_value.id
-private Integer quantity; // stock qty
-private BigDecimal priceOffset; // extra price over base product
+	private Long id;
+	private Long productId;
+	private Long variantValueId;
+	private Integer quantity;
+	private BigDecimal priceOffset;
 
-// getters & setters
-public Long getId() { return id; }
-public void setId(Long id) { this.id = id; }
+	public Long getId() {
+		return id;
+	}
 
-public Long getProductId() { return productId; }
-public void setProductId(Long productId) { this.productId = productId; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-public Long getVariantValueId() { return variantValueId; }
-public void setVariantValueId(Long variantValueId) { this.variantValueId = variantValueId; }
+	public Long getProductId() {
+		return productId;
+	}
 
-public Integer getQuantity() { return quantity; }
-public void setQuantity(Integer quantity) { this.quantity = quantity; }
+	public void setProductId(Long productId) {
+		this.productId = productId;
+	}
 
-public BigDecimal getPriceOffset() { return priceOffset; }
-public void setPriceOffset(BigDecimal priceOffset) { this.priceOffset = priceOffset; }
+	public Long getVariantValueId() {
+		return variantValueId;
+	}
+
+	public void setVariantValueId(Long variantValueId) {
+		this.variantValueId = variantValueId;
+	}
+
+	public Integer getQuantity() {
+		return quantity;
+	}
+
+	public void setQuantity(Integer quantity) {
+		this.quantity = quantity;
+	}
+
+	public BigDecimal getPriceOffset() {
+		return priceOffset;
+	}
+
+	public void setPriceOffset(BigDecimal priceOffset) {
+		this.priceOffset = priceOffset;
+	}
 }

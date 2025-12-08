@@ -7,32 +7,21 @@ import java.util.Optional;
 
 public interface AddressRepository {
 
-    // -------- CREATE --------
-    Long save(Address address);
+	Long save(Address address);
 
-    // -------- UPDATE --------
-    boolean update(Address address);
+	boolean update(Address address);
 
-    // -------- HARD DELETE --------
-    boolean deleteById(Long id, Long userId);
+	boolean deleteById(Long id, Long userId);
 
-    // -------- FIND BY ID WITH USER VALIDATION --------
-    Optional<Address> findByIdAndUser(Long id, Long userId);
+	Optional<Address> findByIdAndUser(Long id, Long userId);
 
-    // -------- LIST OF USER'S ADDRESSES --------
-    List<Address> findAllByUser(Long userId);
+	List<Address> findAllByUser(Long userId);
 
-    // -------- DEFAULT ADDRESS OPERATIONS --------
+	boolean unsetAllDefaults(Long userId);
 
-    // Unset all defaults for user
-    boolean unsetAllDefaults(Long userId);
+	boolean setDefault(Long userId, Long addressId);
 
-    // Set one default address for user
-    boolean setDefault(Long userId, Long addressId);
+	boolean existsByIdAndUser(Long id, Long userId);
 
-    // Check if address belongs to user
-    boolean existsByIdAndUser(Long id, Long userId);
-
-    // Count addresses for user (optional use)
-    int countByUser(Long userId);
+	int countByUser(Long userId);
 }

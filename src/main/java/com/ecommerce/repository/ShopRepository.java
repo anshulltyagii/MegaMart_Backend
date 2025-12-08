@@ -9,7 +9,7 @@ public interface ShopRepository {
 
 	Shop update(Shop shop);
 
-	Optional<Shop> getShopById(Long id); // returns Optional
+	Optional<Shop> getShopById(Long id);
 
 	List<Shop> getAllShops();
 

@@ -25,7 +25,6 @@ public class CategoryRowMapper implements RowMapper<Category> {
 		c.setName(rs.getString("name"));
 		c.setSlug(rs.getString("slug"));
 
-// read is_active as int (TINYINT(1)) to avoid boolean/driver issues
 		int activeInt = 0;
 		try {
 			activeInt = rs.getInt("is_active");

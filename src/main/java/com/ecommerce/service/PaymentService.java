@@ -4,6 +4,7 @@ import com.ecommerce.dto.PaymentRequest;
 import com.ecommerce.model.Payment;
 
 public interface PaymentService {
-    Payment processPayment(PaymentRequest request);
-    Payment getPaymentByOrderId(Long orderId);
+	Payment processPayment(PaymentRequest request);
+
+	Payment getPaymentByOrderId(Long orderId);
 }

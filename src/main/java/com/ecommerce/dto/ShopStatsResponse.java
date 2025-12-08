@@ -6,13 +6,13 @@ import java.util.List;
 @Data
 public class ShopStatsResponse {
 
-    private double totalRevenue;
-    private int totalOrders;
-    private int totalProducts;
-    private int customers;
-    private double todayRevenue;
+	private double totalRevenue;
+	private int totalOrders;
+	private int totalProducts;
+	private int customers;
+	private double todayRevenue;
 
-    private List<Double> last7Days; // graph data
+	private List<Double> last7Days;
 
 	public double getTotalRevenue() {
 		return totalRevenue;

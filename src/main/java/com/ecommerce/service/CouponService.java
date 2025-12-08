@@ -8,20 +8,17 @@ import java.util.List;
 
 public interface CouponService {
 
-    // --- SNIGDHA'S METHODS (Admin/Shopkeeper) ---
-    CouponResponse createCoupon(CouponRequest request);
+	CouponResponse createCoupon(CouponRequest request);
 
-    CouponResponse updateCoupon(Long id, CouponRequest request);
-    
-    boolean deleteCoupon(Long id);
+	CouponResponse updateCoupon(Long id, CouponRequest request);
 
-    CouponResponse getCouponById(Long id);
+	boolean deleteCoupon(Long id);
 
-    List<CouponResponse> getCouponsByShop(Long shopId);
+	CouponResponse getCouponById(Long id);
 
-    List<CouponResponse> getAllCoupons();
+	List<CouponResponse> getCouponsByShop(Long shopId);
 
-    // --- SAMADRITA'S METHODS (User/Checkout) ---
-    // You MUST have this, or your Order Logic cannot validate coupons!
-    ApiResponse<Coupon> validateCoupon(String code, Long userId, Double cartTotal);
+	List<CouponResponse> getAllCoupons();
+
+	ApiResponse<Coupon> validateCoupon(String code, Long userId, Double cartTotal);
 }

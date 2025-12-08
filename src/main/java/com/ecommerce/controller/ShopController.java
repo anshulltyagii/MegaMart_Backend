@@ -58,17 +58,14 @@ public class ShopController {
 
 	@GetMapping
 	public ResponseEntity<List<ShopResponse>> getAll(HttpServletRequest req) {
-	    User currentUser = (User) req.getAttribute("currentUser");
+		User currentUser = (User) req.getAttribute("currentUser");
 
-	    if (currentUser.getRole() == UserRole.SHOPKEEPER) {
-	        // shopkeeper is NOT allowed to view all shops
-	        return ResponseEntity.ok(service.getShopsByOwnerId(currentUser.getId()));
-	    }
+		if (currentUser.getRole() == UserRole.SHOPKEEPER) {
+			return ResponseEntity.ok(service.getShopsByOwnerId(currentUser.getId()));
+		}
 
-	    // admin can still see all shops
-	    return ResponseEntity.ok(service.getAllShops());
+		return ResponseEntity.ok(service.getAllShops());
 	}
-
 
 	@PutMapping("/{id}")
 	public ResponseEntity<ShopResponse> update(@PathVariable Long id, @RequestBody ShopRequest req,
@@ -95,17 +92,17 @@ public class ShopController {
 		checkAccess(shop.getOwnerUserId(), request);
 		return ResponseEntity.ok(service.softDeleteShop(shopId));
 	}
-	
+
 	@GetMapping("/my")
 	public ResponseEntity<List<ShopResponse>> getMyShops(HttpServletRequest request) {
-	    User currentUser = (User) request.getAttribute("currentUser");
+		User currentUser = (User) request.getAttribute("currentUser");
 
-	    if (currentUser == null || currentUser.getRole() != UserRole.SHOPKEEPER) {
-	        throw new BadRequestException("Only shopkeepers can view their shops");
-	    }
+		if (currentUser == null || currentUser.getRole() != UserRole.SHOPKEEPER) {
+			throw new BadRequestException("Only shopkeepers can view their own shops");
+		}
 
-	    Long userId = currentUser.getId();
-	    return ResponseEntity.ok(service.getShopsByOwnerId(userId));
+		Long userId = currentUser.getId();
+		return ResponseEntity.ok(service.getShopsByOwnerId(userId));
 	}
-	
+
 }

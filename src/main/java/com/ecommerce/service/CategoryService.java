@@ -12,8 +12,8 @@ public interface CategoryService {
 	void deleteSoft(Long id);
 
 	void activate(Long id);
-	
+
 	void update(Category c);
-	
+
 	Category getById(Long id);
 }

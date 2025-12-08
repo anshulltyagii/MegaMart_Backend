@@ -14,31 +14,31 @@ import java.util.List;
 @RequestMapping("api/shopkeeper/coupons")
 public class ShopkeeperCouponController {
 
-    @Autowired
-	private  CouponService couponService;
+	@Autowired
+	private CouponService couponService;
 
-    @PostMapping
-    public ResponseEntity<CouponResponse> create(@RequestBody CouponRequest req) {
-        return ResponseEntity.ok(couponService.createCoupon(req));
-    }
+	@PostMapping
+	public ResponseEntity<CouponResponse> create(@RequestBody CouponRequest req) {
+		return ResponseEntity.ok(couponService.createCoupon(req));
+	}
 
-    @GetMapping("/shop/{shopId}")
-    public ResponseEntity<List<CouponResponse>> getByShop(@PathVariable Long shopId) {
-        return ResponseEntity.ok(couponService.getCouponsByShop(shopId));
-    }
+	@GetMapping("/shop/{shopId}")
+	public ResponseEntity<List<CouponResponse>> getByShop(@PathVariable Long shopId) {
+		return ResponseEntity.ok(couponService.getCouponsByShop(shopId));
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<CouponResponse> get(@PathVariable Long id) {
-        return ResponseEntity.ok(couponService.getCouponById(id));
-    }
+	@GetMapping("/{id}")
+	public ResponseEntity<CouponResponse> get(@PathVariable Long id) {
+		return ResponseEntity.ok(couponService.getCouponById(id));
+	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<CouponResponse> update(@PathVariable Long id, @RequestBody CouponRequest req) {
-        return ResponseEntity.ok(couponService.updateCoupon(id, req));
-    }
+	@PutMapping("/{id}")
+	public ResponseEntity<CouponResponse> update(@PathVariable Long id, @RequestBody CouponRequest req) {
+		return ResponseEntity.ok(couponService.updateCoupon(id, req));
+	}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        return ResponseEntity.ok(couponService.deleteCoupon(id));
-    }
+	@DeleteMapping("/{id}")
+	public ResponseEntity<?> delete(@PathVariable Long id) {
+		return ResponseEntity.ok(couponService.deleteCoupon(id));
+	}
 }

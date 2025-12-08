@@ -2,7 +2,5 @@ package com.ecommerce.enums;
 
 public enum UserRole {
 
-	CUSTOMER,
-	SHOPKEEPER,
-	ADMIN
+	CUSTOMER, SHOPKEEPER, ADMIN
 }

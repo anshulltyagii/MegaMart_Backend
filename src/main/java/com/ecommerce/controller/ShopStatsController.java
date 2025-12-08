@@ -10,15 +10,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/shops")
 public class ShopStatsController {
 
-    private final ShopStatsService service;
+	private final ShopStatsService service;
 
-    public ShopStatsController(ShopStatsService service) {
-        this.service = service;
-    }
+	public ShopStatsController(ShopStatsService service) {
+		this.service = service;
+	}
 
-    @GetMapping("/{shopId}/stats")
-    public ResponseEntity<ApiResponse<ShopStatsResponse>> getStats(@PathVariable Long shopId) {
-        ShopStatsResponse stats = service.getStats(shopId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Stats loaded", stats));
-    }
+	@GetMapping("/{shopId}/stats")
+	public ResponseEntity<ApiResponse<ShopStatsResponse>> getStats(@PathVariable Long shopId) {
+		ShopStatsResponse stats = service.getStats(shopId);
+		return ResponseEntity.ok(new ApiResponse<>(true, "Stats loaded", stats));
+	}
 }

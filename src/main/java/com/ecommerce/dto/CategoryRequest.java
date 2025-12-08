@@ -18,7 +18,6 @@ public class CategoryRequest {
 	public CategoryRequest() {
 	}
 
-// getters & setters
 	public Long getParentCategoryId() {
 		return parentCategoryId;
 	}

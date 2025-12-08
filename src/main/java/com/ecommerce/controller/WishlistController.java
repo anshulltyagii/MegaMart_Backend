@@ -25,16 +25,14 @@ public class WishlistController {
 	@Autowired
 	private CartService cartService;
 
-	// ---------------- User Validation Function -----------------
 	private void validateUser(Long userId, String token) {
 		Long loggedId = jwtUtil.getUserId(token);
 
 		if (!loggedId.equals(userId)) {
-			throw new RuntimeException("âŒ Unauthorized! You can access only your wishlist.");
+			throw new RuntimeException(" Unauthorized! You can access only your wishlist.");
 		}
 	}
 
-	// ---------------- Add Wishlist Item ------------------------
 	@PostMapping("/add")
 	public ResponseEntity<WishlistResponse> add(@RequestHeader("Authorization") String token,
 			@RequestBody WishlistRequest request) {
@@ -42,7 +40,6 @@ public class WishlistController {
 		return ResponseEntity.ok(wishlistService.addToWishlist(request.getUserId(), request.getProductId()));
 	}
 
-	// ---------------- Remove Wishlist Item ---------------------
 	@DeleteMapping("/remove")
 	public ResponseEntity<Boolean> remove(@RequestHeader("Authorization") String token,
 			@RequestBody WishlistRequest request) {
@@ -50,7 +47,6 @@ public class WishlistController {
 		return ResponseEntity.ok(wishlistService.removeFromWishlist(request.getUserId(), request.getProductId()));
 	}
 
-	// ---------------- Get Wishlist -----------------------------
 	@GetMapping("/{userId}")
 	public ResponseEntity<List<WishlistResponse>> getWishlist(@RequestHeader("Authorization") String token,
 			@PathVariable Long userId) {
@@ -61,7 +57,7 @@ public class WishlistController {
 	@PostMapping("/{userId}/{productId}/move-to-cart")
 	public ResponseEntity<?> moveWishlistToCart(@RequestHeader("Authorization") String token, @PathVariable Long userId,
 			@PathVariable Long productId, @RequestParam(defaultValue = "1") Integer qty) {
-		validateUser(userId, token.replace("Bearer ", "")); // ðŸ”· Only user can move wishlist item
+		validateUser(userId, token.replace("Bearer ", ""));
 
 		var item = cartService.addToCart(userId, productId, qty);
 		wishlistService.removeFromWishlist(userId, productId);

@@ -6,11 +6,14 @@ import com.ecommerce.model.ReturnRequest;
 import java.util.List;
 
 public interface ReturnService {
-	
+
 	List<ReturnRequest> getUserReturnRequests(Long userId);
-    void requestReturn(Long userId, ReturnRequestDTO requestDto);
-    ReturnRequest getReturnByOrderId(Long userId, Long orderId);
- // these 2 extra methods added
-    void approveReturn(Long returnRequestId);
-    void rejectReturn(Long returnRequestId);
+
+	void requestReturn(Long userId, ReturnRequestDTO requestDto);
+
+	ReturnRequest getReturnByOrderId(Long userId, Long orderId);
+
+	void approveReturn(Long returnRequestId);
+
+	void rejectReturn(Long returnRequestId);
 }

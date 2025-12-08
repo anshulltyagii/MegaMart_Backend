@@ -3,12 +3,12 @@ package com.ecommerce.dto;
 import java.time.LocalDateTime;
 
 public class AdminLogResponse {
-	
+
 	private Long id;
 	private Long adminUserId;
 	private String action;
 	private LocalDateTime createdAt;
-	
+
 	public AdminLogResponse() {
 		super();
 	}

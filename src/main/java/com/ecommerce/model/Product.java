@@ -17,7 +17,6 @@ public class Product {
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 
-// Getters & Setters
 	public Long getId() {
 		return id;
 	}

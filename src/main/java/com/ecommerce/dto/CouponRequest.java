@@ -5,97 +5,93 @@ import java.math.BigDecimal;
 
 public class CouponRequest {
 
-    private String code;
-    private String discountType; // "FLAT" or "PERCENT"
-    
-    // CHANGED FROM double TO BigDecimal (Required for Order Logic)
-    private BigDecimal discountValue;
-    private BigDecimal minOrderAmount;
-    
-    // KEEP AS STRING (Required for Snigdha's AdminService parsing logic)
-    private String validFrom; 
-    private String validTo;
-    
-    private Long shopId; // Nullable
+	private String code;
+	private String discountType;
 
-    public CouponRequest() {
-        super();
-    }
+	private BigDecimal discountValue;
+	private BigDecimal minOrderAmount;
 
-    public CouponRequest(String code, String discountType, BigDecimal discountValue, BigDecimal minOrderAmount,
-            String validFrom, String validTo, Long shopId) {
-        super();
-        this.code = code;
-        this.discountType = discountType;
-        this.discountValue = discountValue;
-        this.minOrderAmount = minOrderAmount;
-        this.validFrom = validFrom;
-        this.validTo = validTo;
-        this.shopId = shopId;
-    }
+	private String validFrom;
+	private String validTo;
 
-    // --- GETTERS & SETTERS ---
+	private Long shopId;
 
-    public String getCode() {
-        return code;
-    }
+	public CouponRequest() {
+		super();
+	}
 
-    public void setCode(String code) {
-        this.code = code;
-    }
+	public CouponRequest(String code, String discountType, BigDecimal discountValue, BigDecimal minOrderAmount,
+			String validFrom, String validTo, Long shopId) {
+		super();
+		this.code = code;
+		this.discountType = discountType;
+		this.discountValue = discountValue;
+		this.minOrderAmount = minOrderAmount;
+		this.validFrom = validFrom;
+		this.validTo = validTo;
+		this.shopId = shopId;
+	}
 
-    public String getDiscountType() {
-        return discountType;
-    }
+	public String getCode() {
+		return code;
+	}
 
-    public void setDiscountType(String discountType) {
-        this.discountType = discountType;
-    }
+	public void setCode(String code) {
+		this.code = code;
+	}
 
-    public BigDecimal getDiscountValue() {
-        return discountValue;
-    }
+	public String getDiscountType() {
+		return discountType;
+	}
 
-    public void setDiscountValue(BigDecimal discountValue) {
-        this.discountValue = discountValue;
-    }
+	public void setDiscountType(String discountType) {
+		this.discountType = discountType;
+	}
 
-    public BigDecimal getMinOrderAmount() {
-        return minOrderAmount;
-    }
+	public BigDecimal getDiscountValue() {
+		return discountValue;
+	}
 
-    public void setMinOrderAmount(BigDecimal minOrderAmount) {
-        this.minOrderAmount = minOrderAmount;
-    }
+	public void setDiscountValue(BigDecimal discountValue) {
+		this.discountValue = discountValue;
+	}
 
-    public String getValidFrom() {
-        return validFrom;
-    }
+	public BigDecimal getMinOrderAmount() {
+		return minOrderAmount;
+	}
 
-    public void setValidFrom(String validFrom) {
-        this.validFrom = validFrom;
-    }
+	public void setMinOrderAmount(BigDecimal minOrderAmount) {
+		this.minOrderAmount = minOrderAmount;
+	}
 
-    public String getValidTo() {
-        return validTo;
-    }
+	public String getValidFrom() {
+		return validFrom;
+	}
 
-    public void setValidTo(String validTo) {
-        this.validTo = validTo;
-    }
+	public void setValidFrom(String validFrom) {
+		this.validFrom = validFrom;
+	}
 
-    public Long getShopId() {
-        return shopId;
-    }
+	public String getValidTo() {
+		return validTo;
+	}
 
-    public void setShopId(Long shopId) {
-        this.shopId = shopId;
-    }
+	public void setValidTo(String validTo) {
+		this.validTo = validTo;
+	}
 
-    @Override
-    public String toString() {
-        return "CouponRequest [code=" + code + ", discountType=" + discountType + ", discountValue=" + discountValue
-                + ", minOrderAmount=" + minOrderAmount + ", validFrom=" + validFrom + ", validTo=" + validTo
-                + ", shopId=" + shopId + "]";
-    }
+	public Long getShopId() {
+		return shopId;
+	}
+
+	public void setShopId(Long shopId) {
+		this.shopId = shopId;
+	}
+
+	@Override
+	public String toString() {
+		return "CouponRequest [code=" + code + ", discountType=" + discountType + ", discountValue=" + discountValue
+				+ ", minOrderAmount=" + minOrderAmount + ", validFrom=" + validFrom + ", validTo=" + validTo
+				+ ", shopId=" + shopId + "]";
+	}
 }

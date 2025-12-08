@@ -3,9 +3,8 @@ package com.ecommerce.dto;
 public class OrderRequest {
 	private String shippingAddress;
 	private String paymentMethod;
-	private String couponCode; // New Field
+	private String couponCode;
 
-	// Getters and Setters
 	public String getShippingAddress() {
 		return shippingAddress;
 	}

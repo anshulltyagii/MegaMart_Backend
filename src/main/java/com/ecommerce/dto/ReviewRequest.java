@@ -1,12 +1,12 @@
 package com.ecommerce.dto;
 
 public class ReviewRequest {
-	
+
 	private Long productId;
 	private int rating;
 	private String title;
 	private String body;
-	
+
 	public ReviewRequest() {
 		super();
 	}
@@ -56,5 +56,5 @@ public class ReviewRequest {
 		return "ReviewRequest [productId=" + productId + ", rating=" + rating + ", title=" + title + ", body=" + body
 				+ "]";
 	}
-	
+
 }

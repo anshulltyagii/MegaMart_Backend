@@ -8,8 +8,6 @@ import com.ecommerce.service.ProductImageService;
 import com.ecommerce.service.ProductService;
 import com.ecommerce.dto.ApiResponse;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -29,17 +27,11 @@ public class ProductImageController {
 		this.productService = productService;
 	}
 
-	// ------------------------------------------------------------
-	// Utility - Is admin OR shop owner of product?
-	// ------------------------------------------------------------
 	private boolean canAccess(Long productId, User currentUser) {
 		return currentUser.getRole() == UserRole.ADMIN
 				|| productService.productBelongsToUser(productId, currentUser.getId());
 	}
 
-	// ------------------------------------------------------------
-	// UPLOAD IMAGE (Admin + Shop Owner)
-	// ------------------------------------------------------------
 	@PostMapping("/products/{productId}/images/upload")
 	public ResponseEntity<ApiResponse<ProductImage>> upload(@PathVariable Long productId,
 			@RequestParam("file") MultipartFile file, @RequestAttribute("currentUser") User currentUser) {
@@ -52,9 +44,6 @@ public class ProductImageController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(true, "Image uploaded", saved));
 	}
 
-	// ------------------------------------------------------------
-	// MANUAL ADD (Admin + Shop Owner)
-	// ------------------------------------------------------------
 	@PostMapping("/products/{productId}/images")
 	public ResponseEntity<ApiResponse<ProductImage>> addManually(@PathVariable Long productId,
 			@RequestBody ProductImageRequest req, @RequestAttribute("currentUser") User currentUser) {
@@ -67,17 +56,11 @@ public class ProductImageController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(true, "Image added", saved));
 	}
 
-	// ------------------------------------------------------------
-	// PUBLIC: GET IMAGES
-	// ------------------------------------------------------------
 	@GetMapping("/products/{productId}/images")
 	public ResponseEntity<ApiResponse<List<ProductImage>>> getImages(@PathVariable Long productId) {
 		return ResponseEntity.ok(new ApiResponse<>(true, "Fetched", service.getImagesByProduct(productId)));
 	}
 
-	// ------------------------------------------------------------
-	// UPDATE (Admin + Shop Owner)
-	// ------------------------------------------------------------
 	@PutMapping("/product-images/{imageId}")
 	public ResponseEntity<ApiResponse<ProductImage>> update(@PathVariable Long imageId,
 			@RequestBody ProductImageRequest req, @RequestAttribute("currentUser") User currentUser) {
@@ -91,9 +74,6 @@ public class ProductImageController {
 		return ResponseEntity.ok(new ApiResponse<>(true, "Updated", service.updateImage(imageId, req)));
 	}
 
-	// ------------------------------------------------------------
-	// DELETE (Admin + Shop Owner)
-	// ------------------------------------------------------------
 	@DeleteMapping("/product-images/{imageId}")
 	public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long imageId,
 			@RequestAttribute("currentUser") User currentUser) {
@@ -108,9 +88,6 @@ public class ProductImageController {
 		return ResponseEntity.ok(new ApiResponse<>(true, "Soft deleted", null));
 	}
 
-	// ------------------------------------------------------------
-	// SET PRIMARY IMAGE (Admin + Shop Owner)
-	// ------------------------------------------------------------
 	@PatchMapping("/product-images/{imageId}/primary")
 	public ResponseEntity<ApiResponse<Void>> setPrimary(@PathVariable Long imageId, @RequestParam Long productId,
 			@RequestAttribute("currentUser") User currentUser) {

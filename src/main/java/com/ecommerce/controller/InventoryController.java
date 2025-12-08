@@ -11,10 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * INVENTORY CONTROLLER - GET is public 
- * - Stock changes allowed only for ADMIN + SHOPKEEPER
- */
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {
@@ -25,9 +21,6 @@ public class InventoryController {
 		this.inventoryService = inventoryService;
 	}
 
-	// ------------------------------------------------------------
-	// UTILITY: CHECK ADMIN OR SHOPKEEPER
-	// ------------------------------------------------------------
 	private void allowAdminOrShopkeeper(HttpServletRequest req) {
 		User currentUser = (User) req.getAttribute("currentUser");
 
@@ -41,9 +34,6 @@ public class InventoryController {
 		}
 	}
 
-	// ------------------------------------------------------------
-	// GET INVENTORY STATUS (PUBLIC)
-	// ------------------------------------------------------------
 	@GetMapping("/{productId}")
 	public ResponseEntity<InventoryResponse> getInventory(@PathVariable Long productId) {
 
@@ -51,9 +41,6 @@ public class InventoryController {
 		return ResponseEntity.ok(response);
 	}
 
-	// ------------------------------------------------------------
-	// INIT / RESET INVENTORY (ADMIN/SHOPKEEPER)
-	// ------------------------------------------------------------
 	@PostMapping("/{productId}/init")
 	public ResponseEntity<InventoryResponse> initInventory(@PathVariable Long productId, @RequestParam int quantity,
 			HttpServletRequest req) {
@@ -64,9 +51,6 @@ public class InventoryController {
 		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	}
 
-	// ------------------------------------------------------------
-	// ADD STOCK
-	// ------------------------------------------------------------
 	@PostMapping("/{productId}/add")
 	public ResponseEntity<InventoryResponse> addStock(@PathVariable Long productId, @RequestParam int quantity,
 			HttpServletRequest req) {
@@ -77,9 +61,6 @@ public class InventoryController {
 		return ResponseEntity.ok(response);
 	}
 
-	// ------------------------------------------------------------
-	// DECREASE STOCK
-	// ------------------------------------------------------------
 	@PostMapping("/{productId}/decrease")
 	public ResponseEntity<InventoryResponse> decreaseStock(@PathVariable Long productId, @RequestParam int quantity,
 			HttpServletRequest req) {
@@ -90,9 +71,6 @@ public class InventoryController {
 		return ResponseEntity.ok(response);
 	}
 
-	// ------------------------------------------------------------
-	// RESERVE STOCK (Checkout)
-	// ------------------------------------------------------------
 	@PostMapping("/{productId}/reserve")
 	public ResponseEntity<InventoryResponse> reserveStock(@PathVariable Long productId, @RequestParam int quantity,
 			HttpServletRequest req) {
@@ -103,9 +81,6 @@ public class InventoryController {
 		return ResponseEntity.ok(response);
 	}
 
-	// ------------------------------------------------------------
-	// RELEASE RESERVED STOCK
-	// ------------------------------------------------------------
 	@PostMapping("/{productId}/release")
 	public ResponseEntity<InventoryResponse> releaseStock(@PathVariable Long productId, @RequestParam int quantity,
 			HttpServletRequest req) {
@@ -116,9 +91,6 @@ public class InventoryController {
 		return ResponseEntity.ok(response);
 	}
 
-	// ------------------------------------------------------------
-	// CONSUME RESERVED STOCK (Order Confirm)
-	// ------------------------------------------------------------
 	@PostMapping("/{productId}/consume")
 	public ResponseEntity<InventoryResponse> consumeReserved(@PathVariable Long productId, @RequestParam int quantity,
 			HttpServletRequest req) {

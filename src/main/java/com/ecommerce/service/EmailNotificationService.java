@@ -7,18 +7,13 @@ import java.util.List;
 
 public interface EmailNotificationService {
 
-    // Create an email notification (PENDING)
-    EmailNotificationResponse sendEmail(Long userId, EmailSendRequest request);
+	EmailNotificationResponse sendEmail(Long userId, EmailSendRequest request);
 
-    // Update email status (SENT or FAILED)
-    boolean updateStatus(Long notificationId, String status);
+	boolean updateStatus(Long notificationId, String status);
 
-    // Get single email log by ID
-    EmailNotificationResponse getNotificationById(Long id);
+	EmailNotificationResponse getNotificationById(Long id);
 
-    // Get user's all email logs
-    List<EmailNotificationResponse> getAllByUser(Long userId);
+	List<EmailNotificationResponse> getAllByUser(Long userId);
 
-    // Admin: get all email logs
-    List<EmailNotificationResponse> getAllNotifications();
+	List<EmailNotificationResponse> getAllNotifications();
 }

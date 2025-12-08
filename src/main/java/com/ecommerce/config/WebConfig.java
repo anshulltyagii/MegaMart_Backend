@@ -31,17 +31,23 @@ public class WebConfig implements WebMvcConfigurer {
 						"/api/otp/**", 
 						"/api/public/**",
 
-						//  allow all public product GET routes
+						//  allow all public product routes
 						"/api/products", 
 						"/api/products/",
 						"/api/products/[0-9]*",
-						"/api/products/*", // Only GET because GET mapped
+						"/api/products/*", 
 						"/api/products/search/**",
 
 						// Category browsing
 						"/api/categories/**",
 						"/api/products/*/images",
-						"/api/products/*/images/**"
+						"/api/products/*/images/**",
+						"/api/reviews/avg/*",
+						"/api/reviews/newest/*",
+						"/api/reviews/highest/*",
+						"/api/reviews/lowest/*",
+						"/api/reviews/product/*"
+
 );
 		}
 

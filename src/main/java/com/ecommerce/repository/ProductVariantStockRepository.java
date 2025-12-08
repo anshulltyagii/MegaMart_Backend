@@ -7,13 +7,13 @@ import java.util.Optional;
 
 public interface ProductVariantStockRepository {
 
-Long save(ProductVariantStock stock);
+	Long save(ProductVariantStock stock);
 
-boolean update(ProductVariantStock stock);
+	boolean update(ProductVariantStock stock);
 
-Optional<ProductVariantStock> findById(Long id);
+	Optional<ProductVariantStock> findById(Long id);
 
-Optional<ProductVariantStock> findByProductAndValue(Long productId, Long valueId);
+	Optional<ProductVariantStock> findByProductAndValue(Long productId, Long valueId);
 
-List<ProductVariantStock> findByProductId(Long productId);
+	List<ProductVariantStock> findByProductId(Long productId);
 }

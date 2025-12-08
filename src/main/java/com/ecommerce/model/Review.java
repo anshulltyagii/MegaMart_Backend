@@ -3,7 +3,7 @@ package com.ecommerce.model;
 import java.sql.Timestamp;
 
 public class Review {
-	
+
 	private Long id;
 	private Long productId;
 	private Long userId;
@@ -12,7 +12,7 @@ public class Review {
 	private String body;
 	private boolean isDeleted;
 	private Timestamp createdAt;
-	
+
 	public Review() {
 		super();
 	}

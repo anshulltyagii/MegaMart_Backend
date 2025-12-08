@@ -19,7 +19,6 @@ public class CategoryResponse {
 		this.isActive = isActive;
 	}
 
-// getters & setters
 	public Long getId() {
 		return id;
 	}

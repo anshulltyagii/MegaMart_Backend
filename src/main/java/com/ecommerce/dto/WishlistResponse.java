@@ -4,15 +4,15 @@ import java.time.LocalDateTime;
 
 public class WishlistResponse {
 
-    private Long id;
-    private Long userId;
-    private Long productId;
-    private String productName;
-    private double price;
-    private String image;
-    private LocalDateTime addedAt;
+	private Long id;
+	private Long userId;
+	private Long productId;
+	private String productName;
+	private double price;
+	private String image;
+	private LocalDateTime addedAt;
 
-    public WishlistResponse() {
+	public WishlistResponse() {
 		super();
 	}
 
