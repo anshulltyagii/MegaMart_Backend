@@ -21,7 +21,7 @@ public class AddressController {
 	}
 
 	@PostMapping
-	public ResponseEntity<AddressResponse> createAddress(@RequestParam Long userId, // temporary until JWT added
+	public ResponseEntity<AddressResponse> createAddress(@RequestParam Long userId, 
 			@RequestBody AddressRequest request) {
 
 		AddressResponse response = addressService.createAddress(userId, request);
